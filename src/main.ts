@@ -1,21 +1,18 @@
-
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-
 import App from './App.vue'
 import router from './router'
-
-import 'vuetify/styles'
+import 'vuetify/styles' // Asegúrate de que los estilos de Vuetify están siendo importados
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-
+import '@mdi/font/css/materialdesignicons.css'
 const vuetify = createVuetify({
   components,
   directives,
 })
 
-const app = createApp(App) // ✅ solo una vez
+const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.use(vuetify)
