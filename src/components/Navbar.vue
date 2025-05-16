@@ -28,45 +28,25 @@
       style="max-width: 300px"
     />
 
-    <v-btn icon>
-      <v-icon>mdi-bell</v-icon>
-    </v-btn>
-    <v-btn icon>
-      <v-icon>mdi-cog</v-icon>
-    </v-btn>
-    <v-menu
-      v-model="logoutMenu"
-      offset-y
-      bottom
-    >
-      <template #activator="{ props }">
-        <v-btn icon v-bind="props">
-          <v-icon>mdi-account</v-icon>
-        </v-btn>
-      </template>
-      <v-list>
-        <v-list-item @click="logout">
-          <v-list-item-title>Cerrar sesión</v-list-item-title>
-        </v-list-item>
-      </v-list>
-    </v-menu>
+    <!-- Componente Notificación -->
+    <Notificacion />
+
+    <!-- Componente Configuración -->
+    <Configuracion />
+
+    <!-- Componente Perfil / Menú -->
+    <PerfilMenu />
   </v-app-bar>
 </template>
 
 <script lang="ts" setup>
 import { ref, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import Notificacion from '@/components/Notificacion.vue'
+import Configuracion from '@/components/Configuracion.vue'
+import PerfilMenu from '@/components/PerfilMenu.vue'
 
 const toggleDrawer = inject<() => void>('toggleDrawer')!
 const search = ref('')
-
-const logoutMenu = ref(false)
-const router = useRouter()
-
-function logout() {
-  logoutMenu.value = false
-  router.push({ name: 'Home' })  // Redirige a Inicio
-}
 </script>
 
 <style scoped>
