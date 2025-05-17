@@ -7,50 +7,25 @@
     dark
   >
     <v-list nav dense>
-      <!-- Sección Principal -->
-      <v-subheader>Principal</v-subheader>
-      <v-list-item
-        v-for="item in mainItems"
-        :key="item.title"
-        :to="item.to"
-        link
-        active-class="bg-blue-darken-1"
-      >
-        <v-list-item-icon>
-          <v-icon>{{ item.icon }}</v-icon>
-        </v-list-item-icon>
-        <v-list-item-title>{{ item.title }}</v-list-item-title>
-      </v-list-item>
-
-      <!-- Sección Gestión -->
-      <v-subheader>Gestión</v-subheader>
-      <v-list-item
-        v-for="item in gestionItems"
-        :key="item.title"
-        :to="item.to"
-        link
-        active-class="bg-blue-darken-1"
-      >
-        <v-list-item-icon>
-          <v-icon>{{ item.icon }}</v-icon>
-        </v-list-item-icon>
-        <v-list-item-title>{{ item.title }}</v-list-item-title>
-      </v-list-item>
-
-      <!-- Sección Configuración -->
-      <v-subheader>Configuración</v-subheader>
-      <v-list-item
-        v-for="item in configItems"
-        :key="item.title"
-        :to="item.to"
-        link
-        active-class="bg-blue-darken-1"
-      >
-        <v-list-item-icon>
-          <v-icon>{{ item.icon }}</v-icon>
-        </v-list-item-icon>
-        <v-list-item-title>{{ item.title }}</v-list-item-title>
-      </v-list-item>
+      <!-- menu group -->
+      <template
+        v-for="group in menuGroups"
+        :key="group.title">
+        <v-subheader>{{ group.title }}</v-subheader>
+        <template v-for="(item, itemIndex) in group.items" :key="item.title">
+          <v-list-item
+            :to="item.to"
+            link
+            v-if="itemIndex == 1"
+            active-class="bg-blue-darken-1"
+          >
+            <template v-slot:prepend>
+              <v-icon>{{ item.icon }}</v-icon>
+            </template>
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+          </v-list-item>
+        </template>
+      </template>
     </v-list>
   </v-navigation-drawer>
 </template>
@@ -77,4 +52,11 @@ const configItems = [
   { title: 'Roles', icon: 'mdi-account-cog-outline', to: '/roles' },
   { title: 'Usuarios', icon: 'mdi-account', to: '/usuarios' },
 ]
+
+const menuGroups = [
+  {title: 'Principal', items : mainItems},
+  {title: 'Gestion', items : gestionItems},
+  {title: 'Configuración', items : configItems},
+]
+
 </script>

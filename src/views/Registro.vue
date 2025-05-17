@@ -1,7 +1,5 @@
 <template>
   <v-app>
-    <Navbar />
-
     <v-main>
       <v-container fluid class="fill-height">
         <v-row no-gutters class="fill-height">
@@ -88,7 +86,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Navbar from '@/components/NavbarInicio.vue'
 
 // Refs con tipado
 const name = ref<string>('')

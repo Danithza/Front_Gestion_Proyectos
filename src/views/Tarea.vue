@@ -1,35 +1,32 @@
 <template>
-    <DashboardLayout>
-      <v-container>
-        <v-card>
-          <v-card-title class="text-h5">Gestión de Tareas</v-card-title>
-          <v-data-table
-            :headers="headers"
-            :items="tareas"
-            class="elevation-1"
-            item-value="id"
-          >
-            <template #item.estado_tarea_id="{ item }">
-              <v-chip :color="getEstadoColor(item.estado_tarea_id)" dark>
-                {{ getEstadoNombre(item.estado_tarea_id) }}
-              </v-chip>
-            </template>
-  
-            <template #item.complejidad_id="{ item }">
-              <v-chip :color="getComplejidadColor(item.complejidad_id)" dark>
-                {{ getComplejidadTexto(item.complejidad_id) }}
-              </v-chip>
-            </template>
-          </v-data-table>
-        </v-card>
-      </v-container>
-    </DashboardLayout>
+    <v-container>
+      <v-card>
+        <v-card-title class="text-h5">Gestión de Tareas</v-card-title>
+        <v-data-table
+          :headers="headers"
+          :items="tareas"
+          class="elevation-1"
+          item-value="id"
+        >
+          <template #item.estado_tarea_id="{ item }">
+            <v-chip :color="getEstadoColor(item.estado_tarea_id)" dark>
+              {{ getEstadoNombre(item.estado_tarea_id) }}
+            </v-chip>
+          </template>
+
+          <template #item.complejidad_id="{ item }">
+            <v-chip :color="getComplejidadColor(item.complejidad_id)" dark>
+              {{ getComplejidadTexto(item.complejidad_id) }}
+            </v-chip>
+          </template>
+        </v-data-table>
+      </v-card>
+    </v-container>
   </template>
-  
+
   <script setup lang="ts">
-  import DashboardLayout from '@/layouts/DashboardLayout.vue'
   import { ref } from 'vue'
-  
+
   const headers = [
     { title: 'ID', value: 'id' },
     { title: 'Estado', value: 'estado_tarea_id' },
@@ -38,7 +35,7 @@
     { title: 'Fecha finalización', value: 'fecha_finalizacion' },
     { title: 'Complejidad', value: 'complejidad_id' },
   ]
-  
+
   const tareas = ref([
     {
       id: 1,
@@ -91,7 +88,7 @@
       fecha_finalizacion: '11/03/2025'
     }
   ])
-  
+
   function getEstadoNombre(id: number) {
     const estados: Record<number, string> = {
       4: 'Finalizado',
@@ -100,7 +97,7 @@
     }
     return estados[id] || 'Desconocido'
   }
-  
+
   function getEstadoColor(id: number) {
     const colores: Record<number, string> = {
       4: 'green',
@@ -109,7 +106,7 @@
     }
     return colores[id] || 'grey'
   }
-  
+
   function getComplejidadTexto(id: number) {
     const niveles: Record<number, string> = {
       3: 'Baja',
@@ -118,7 +115,7 @@
     }
     return niveles[id] || 'N/D'
   }
-  
+
   function getComplejidadColor(id: number) {
     const colores: Record<number, string> = {
       3: 'green',
@@ -128,4 +125,3 @@
     return colores[id] || 'grey'
   }
   </script>
-  

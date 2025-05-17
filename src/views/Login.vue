@@ -1,7 +1,5 @@
 <template>
   <v-app>
-    <Navbar />
-
     <v-main>
       <v-container fluid class="fill-height">
         <v-row no-gutters class="fill-height">
@@ -101,13 +99,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import Navbar from '@/components/NavbarInicio.vue'
 
 const router = useRouter()
 
 const visible = ref(false)
 const loading = ref(false)
-const email = ref('')
+let email = ref('test1@test.com')
 const password = ref('')
 
 const emailRules = [
