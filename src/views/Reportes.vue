@@ -47,6 +47,7 @@
 import { ref } from 'vue'
 
 
+
 interface Equipo {
   id: number
   nombre: string

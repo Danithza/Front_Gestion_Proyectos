@@ -43,6 +43,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
+
 interface Rol {
   id: number
   nombre: string

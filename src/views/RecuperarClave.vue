@@ -44,7 +44,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import Navbar from '@/components/NavbarInicio.vue'
+
 
 // Estado y validación
 const email = ref<string>('')

@@ -10,13 +10,16 @@
       <!-- menu group -->
       <template
         v-for="group in menuGroups"
-        :key="group.title">
+        :key="group.title"
+      >
         <v-subheader>{{ group.title }}</v-subheader>
-        <template v-for="(item, itemIndex) in group.items" :key="item.title">
+        <template
+          v-for="item in group.items"
+          :key="item.title"
+        >
           <v-list-item
             :to="item.to"
             link
-            v-if="itemIndex == 1"
             active-class="bg-blue-darken-1"
           >
             <template v-slot:prepend>
@@ -54,9 +57,8 @@ const configItems = [
 ]
 
 const menuGroups = [
-  {title: 'Principal', items : mainItems},
-  {title: 'Gestion', items : gestionItems},
-  {title: 'Configuración', items : configItems},
+  { title: 'Principal', items: mainItems },
+  { title: 'Gestion', items: gestionItems },
+  { title: 'Configuración', items: configItems },
 ]
-
 </script>
