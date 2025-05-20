@@ -1,138 +1,145 @@
 <template>
-    <div class="p-6 max-w-7xl mx-auto">
-      <h1 class="text-3xl font-bold mb-6">Gestión de Proyectos</h1>
-  
-      <v-btn @click="mostrarFormulario" color="primary" class="mb-4">
-        + Crear Proyecto
-      </v-btn>
-  
-      <v-dialog v-model="formularioVisible" max-width="600px">
-        <v-card>
-          <v-card-title>
-            <span class="text-h5">Crear Nuevo Proyecto</span>
+  <v-container>
+    <v-row class="mb-4" align="center" justify="space-between">
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="filtro"
+          label="Buscar por título..."
+          prepend-inner-icon="mdi-magnify"
+        />
+      </v-col>
+      <v-col cols="12" md="3" class="text-end">
+        <ProyectoForm @proyecto-creado="agregarProyecto" />
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col
+        v-for="proyecto in proyectosFiltrados"
+        :key="proyecto.id"
+        cols="12"
+        md="6"
+        lg="4"
+      >
+        <v-card class="elevation-3" rounded="xl">
+          <v-card-title class="bg-primary text-white">
+            {{ proyecto.titulo }}
           </v-card-title>
           <v-card-text>
-            <ProyectoForm
-              :proyecto="proyectoEnEdicion"
-              @proyectoCreado="proyectoCreado"
-            />
+            <div class="text-body-2 mb-2">{{ proyecto.descripcion }}</div>
+            <v-chip class="ma-1" color="indigo" text-color="white">
+              Inicio: {{ proyecto.fecha_inicio }}
+            </v-chip>
+            <v-chip class="ma-1" color="deep-purple accent-4" text-color="white">
+              Fin: {{ proyecto.fecha_final }}
+            </v-chip>
+            <div class="mt-2">
+              <strong>Precio:</strong> ${{ proyecto.precio }}<br />
+              <strong>Encargado:</strong> {{ proyecto.encargado }}<br />
+              <strong>Cliente:</strong> {{ proyecto.cliente }}<br />
+              <strong>Estado:</strong> {{ proyecto.estado }}<br />
+              <strong>Tareas:</strong>
+              <ul class="pl-4">
+                <li v-for="(tarea, i) in proyecto.tareas" :key="i">
+                  {{ tarea.nombre }} – {{ tarea.encargado }}
+                </li>
+              </ul>
+            </div>
           </v-card-text>
           <v-card-actions>
-            <v-spacer />
-            <v-btn color="secondary" @click="formularioVisible = false">Cancelar</v-btn>
+            <v-btn icon color="blue" @click="editarProyecto(proyecto)">
+              <v-icon>mdi-pencil</v-icon>
+            </v-btn>
+            <v-btn icon color="red" @click="eliminarProyecto(proyecto)">
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
           </v-card-actions>
         </v-card>
-      </v-dialog>
+      </v-col>
+    </v-row>
 
-    </div>
-  </template>
-  
-  <script lang="ts" setup>
-  import { ref, computed, onMounted } from 'vue'
-  import { useRouter } from 'vue-router'
-  import ProyectoForm from '@/components/ProyectoForm.vue'
-  
-  interface Tarea {
-    id: number
-    nombre: string
-    encargado: string
-    estado: string
-  }
-  
-  interface Proyecto {
-    id: number
-    titulo: string
-    descripcion: string
-    fecha_inicio: string
-    fecha_final: string
-    precio: number
-    encargado: string
-    estado: string
-    cliente: string
-    tareas: Tarea[]
-  }
-  
-  const router = useRouter()
-  
-  const proyectos = ref<Proyecto[]>([])
-  const formularioVisible = ref(false)
-  const proyectoEnEdicion = ref<Proyecto | null>(null)
-  const filtro = ref('')
-  
-  const cargarProyectos = () => {
-    proyectos.value = [
-      {
-        id: 1,
-        titulo: 'Proyecto Alpha',
-        descripcion: 'Este es un proyecto de prueba.',
-        fecha_inicio: '2025-01-01',
-        fecha_final: '2025-06-01',
-        precio: 10000,
-        encargado: 'Juan Pérez',
-        estado: 'En progreso',
-        cliente: 'Empresa XYZ',
-        tareas: [{ id: 1, nombre: 'Tarea 1', encargado: 'Carlos', estado: 'Pendiente' }]
-      },
-      {
-        id: 2,
-        titulo: 'Proyecto Beta',
-        descripcion: 'Otro proyecto de ejemplo.',
-        fecha_inicio: '2025-03-01',
-        fecha_final: '2025-12-31',
-        precio: 15000,
-        encargado: 'Ana López',
-        estado: 'Planificado',
-        cliente: 'Cliente ABC',
-        tareas: []
-      },
-    ]
-  }
-  
-  const proyectosFiltrados = computed(() =>
-    filtro.value
-      ? proyectos.value.filter(p =>
-          p.titulo.toLowerCase().includes(filtro.value.toLowerCase()) ||
-          p.cliente.toLowerCase().includes(filtro.value.toLowerCase())
-        )
-      : proyectos.value
+    <!-- Modal edición -->
+    <v-dialog v-model="editarDialog" max-width="800px">
+      <v-card>
+        <v-card-title>Editar Proyecto</v-card-title>
+        <v-card-text>
+          <v-form @submit.prevent="guardarEdicion">
+            <v-text-field v-model="proyectoEditado.titulo" label="Título" />
+            <v-textarea v-model="proyectoEditado.descripcion" label="Descripción" />
+            <v-text-field v-model="proyectoEditado.precio" label="Precio" type="number" />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="error" text @click="editarDialog = false">Cancelar</v-btn>
+          <v-btn color="primary" @click="guardarEdicion">Guardar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import ProyectoForm from '@/components/ProyectoForm.vue'
+
+interface Tarea {
+  nombre: string
+  encargado: string
+}
+
+interface Proyecto {
+  id: number
+  titulo: string
+  descripcion: string
+  fecha_inicio: string
+  fecha_final: string
+  precio: number
+  encargado: string
+  cliente: string
+  estado: string
+  tareas: Tarea[]
+}
+
+const proyectos = ref<Proyecto[]>([])
+const filtro = ref('')
+const editarDialog = ref(false)
+const proyectoEditado = ref<Proyecto>({
+  id: 0,
+  titulo: '',
+  descripcion: '',
+  fecha_inicio: '',
+  fecha_final: '',
+  precio: 0,
+  encargado: '',
+  cliente: '',
+  estado: '',
+  tareas: [],
+})
+
+const proyectosFiltrados = computed(() => {
+  return proyectos.value.filter((p) =>
+    p.titulo.toLowerCase().includes(filtro.value.toLowerCase())
   )
-  
-  const mostrarFormulario = () => {
-    proyectoEnEdicion.value = null
-    formularioVisible.value = true
-  }
-  
-  const editarProyecto = (proyecto: Proyecto) => {
-    proyectoEnEdicion.value = { ...proyecto }
-    formularioVisible.value = true
-  }
-  
-  const eliminarProyecto = (id: number) => {
-    proyectos.value = proyectos.value.filter(p => p.id !== id)
-  }
-  
-  const proyectoCreado = (nuevoProyecto: Proyecto) => {
-    const index = proyectos.value.findIndex(p => p.id === nuevoProyecto.id)
-    if (index !== -1) {
-      proyectos.value[index] = nuevoProyecto
-    } else {
-      nuevoProyecto.id = Date.now()
-      proyectos.value.push(nuevoProyecto)
-    }
-  }
-  
-  const verTareas = (proyecto: Proyecto) => {
-    router.push({ name: 'tareas', query: { proyectoId: proyecto.id } })
-  }
-  
-  const formatFecha = (fecha: string): string => {
-    const date = new Date(fecha)
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
-  
-  onMounted(cargarProyectos)
-  </script>
+})
+
+function agregarProyecto(nuevo: Proyecto) {
+  nuevo.id = Date.now()
+  proyectos.value.push(nuevo)
+}
+
+function editarProyecto(p: Proyecto) {
+  proyectoEditado.value = { ...p }
+  editarDialog.value = true
+}
+
+function guardarEdicion() {
+  const index = proyectos.value.findIndex(p => p.id === proyectoEditado.value.id)
+  if (index !== -1) proyectos.value[index] = { ...proyectoEditado.value }
+  editarDialog.value = false
+}
+
+function eliminarProyecto(p: Proyecto) {
+  proyectos.value = proyectos.value.filter(proj => proj.id !== p.id)
+}
+</script>
