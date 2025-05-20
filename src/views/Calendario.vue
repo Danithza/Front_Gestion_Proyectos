@@ -1,116 +1,114 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import {
+  startOfMonth,
+  endOfMonth,
+  addDays,
+  addMonths,
+  subMonths,
+  startOfWeek,
+  format,
+} from 'date-fns'
+import { useTaskStore } from '@/stores/taskStore'
+
+const store = useTaskStore()
+const currentDate = ref(new Date())
+
+const goToPreviousMonth = () => {
+  currentDate.value = subMonths(currentDate.value, 1)
+}
+
+const goToNextMonth = () => {
+  currentDate.value = addMonths(currentDate.value, 1)
+}
+
+// Generar los días del calendario (6 filas x 7 columnas)
+const calendarDays = computed(() => {
+  const start = startOfWeek(startOfMonth(currentDate.value), { weekStartsOn: 0 }) // Domingo
+  return Array.from({ length: 42 }, (_, i) => addDays(start, i))
+})
+
+const formattedMonthYear = computed(() => {
+  return format(currentDate.value, 'MMMM yyyy')
+})
+
+const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+
+function getPriorityColor(priority: string): string {
+  switch (priority) {
+    case 'alta': return 'pink-lighten-4'
+    case 'media': return 'indigo-lighten-4'
+    case 'baja': return 'blue-lighten-4'
+    default: return 'grey-lighten-2'
+  }
+}
+</script>
+
 <template>
   <v-container fluid>
-    <v-card>
-      <v-card-title class="d-flex align-center">
-        <span class="text-h6">📅 Calendario de Tareas</span>
-        <v-spacer />
-        <v-btn icon @click="prev">
-          <v-icon>mdi-chevron-left</v-icon>
-        </v-btn>
-        <v-btn icon @click="next">
-          <v-icon>mdi-chevron-right</v-icon>
-        </v-btn>
-      </v-card-title>
+    <v-row justify="center">
+      <v-col cols="12" md="10">
+        <v-card>
+          <v-card-title class="d-flex justify-space-between align-center">
+            <v-btn icon @click="goToPreviousMonth">
+              <v-icon>mdi-chevron-left</v-icon>
+            </v-btn>
+            <span class="text-h6 font-weight-bold">
+              {{ formattedMonthYear }}
+            </span>
+            <v-btn icon @click="goToNextMonth">
+              <v-icon>mdi-chevron-right</v-icon>
+            </v-btn>
+          </v-card-title>
 
-      <v-card-text>
-        <v-calendar
-          v-model="current"
-          type="month"
-          :events="events"
-          color="primary"
-          event-color="green"
-          @click:date="onDateClick"
-        />
-      </v-card-text>
-    </v-card>
+          <v-divider></v-divider>
 
-    <!-- Diálogo para agregar evento -->
-    <v-dialog v-model="dialog" max-width="400">
-      <v-card>
-        <v-card-title>Agregar Tarea</v-card-title>
-        <v-card-text>
-          <v-text-field label="Nombre de la tarea" v-model="newEvent.title" />
-          <v-text-field label="Fecha límite (YYYY-MM-DD)" v-model="newEvent.dueDate" />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="grey" text @click="dialog = false">Cancelar</v-btn>
-          <v-btn color="primary" text @click="saveEvent">Guardar</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+          <!-- Encabezado de días de la semana -->
+          <v-row class="text-center font-weight-bold py-2" no-gutters>
+            <v-col
+              v-for="day in weekDays"
+              :key="day"
+              class="text-grey-darken-1"
+            >
+              {{ day }}
+            </v-col>
+          </v-row>
 
-    <!-- Snackbar para notificación -->
-    <v-snackbar v-model="showNotification" color="red-darken-1" timeout="4000">
-      🔔 La tarea "{{ upcomingTaskTitle }}" vence pronto.
-      <template v-slot:actions>
-        <v-btn icon @click="showNotification = false"><v-icon>mdi-close</v-icon></v-btn>
-      </template>
-    </v-snackbar>
+          <!-- Celdas del calendario -->
+          <v-row no-gutters>
+            <v-col
+              v-for="day in calendarDays"
+              :key="day.toString()"
+              cols="12"
+              sm="1"
+              class="pa-1"
+            >
+              <v-sheet
+                class="pa-2 rounded-xl"
+                color="grey-lighten-5"
+                height="120"
+                elevation="1"
+              >
+                <div class="text-caption text-grey-darken-2 font-weight-medium">
+                  {{ format(day, 'd') }}
+                </div>
+
+                <!-- Tareas del día -->
+                <v-chip
+                  v-for="task in store.getTasksByDate(format(day, 'yyyy-MM-dd'))"
+                  :key="task.id"
+                  :color="getPriorityColor(task.priority)"
+                  size="x-small"
+                  class="ma-1"
+                  label
+                >
+                  {{ task.title }}
+                </v-chip>
+              </v-sheet>
+            </v-col>
+          </v-row>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
-
-<script lang="ts" setup>
-import { ref, watch } from 'vue'
-
-interface Event {
-  name: string
-  start: string
-  color?: string
-}
-
-const current = ref(new Date().toISOString().substring(0, 10))
-const events = ref<Event[]>([])
-
-const dialog = ref(false)
-const selectedDate = ref('')
-const newEvent = ref({ title: '', dueDate: '' })
-
-const showNotification = ref(false)
-const upcomingTaskTitle = ref('')
-
-const onDateClick = (e: { date: string }) => {
-  selectedDate.value = e.date
-  newEvent.value = { title: '', dueDate: e.date }
-  dialog.value = true
-}
-
-const saveEvent = () => {
-  if (newEvent.value.title && newEvent.value.dueDate) {
-    events.value.push({
-      name: newEvent.value.title,
-      start: newEvent.value.dueDate,
-      color: 'green',
-    })
-    dialog.value = false
-  }
-}
-
-// Mover a mes siguiente/anterior
-const next = () => {
-  const date = new Date(current.value)
-  date.setMonth(date.getMonth() + 1)
-  current.value = date.toISOString().substring(0, 10)
-}
-
-const prev = () => {
-  const date = new Date(current.value)
-  date.setMonth(date.getMonth() - 1)
-  current.value = date.toISOString().substring(0, 10)
-}
-
-// Notificar si hay tareas próximas (mañana)
-watch(events, () => {
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(today.getDate() + 1)
-
-  const formattedTomorrow = tomorrow.toISOString().substring(0, 10)
-
-  const upcoming = events.value.find(e => e.start === formattedTomorrow)
-  if (upcoming) {
-    upcomingTaskTitle.value = upcoming.name
-    showNotification.value = true
-  }
-})
-</script>
