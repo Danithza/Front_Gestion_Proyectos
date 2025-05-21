@@ -68,7 +68,7 @@ const routes = [
         component: Roles
       },
       {
-        path: '/usuario',
+        path: '/usuarios',
         name: 'main.usuarios',
         component: Usuarios
       },

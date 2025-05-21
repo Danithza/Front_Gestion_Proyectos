@@ -45,13 +45,11 @@ const mainItems = [
 
 const gestionItems = [
   { title: 'Tareas', icon: 'mdi-format-list-checkbox', to: '/tareas' },
-  { title: 'Equipos', icon: 'mdi-account-group-outline', to: '/equipos' },
   { title: 'Calendario', icon: 'mdi-calendar-month', to: '/calendario' },
   { title: 'Reportes', icon: 'mdi-chart-box-outline', to: '/reportes' },
 ]
 
 const configItems = [
-  { title: 'Configuración', icon: 'mdi-cog-outline', to: '/configuracion' },
   { title: 'Roles', icon: 'mdi-account-cog-outline', to: '/roles' },
   { title: 'Usuarios', icon: 'mdi-account', to: '/usuarios' },
 ]
