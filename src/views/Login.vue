@@ -104,7 +104,7 @@ const router = useRouter()
 
 const visible = ref(false)
 const loading = ref(false)
-let email = ref('test1@test.com')
+let email = ref('')
 const password = ref('')
 
 const emailRules = [

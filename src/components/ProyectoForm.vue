@@ -1,29 +1,81 @@
 <template>
-  <v-dialog v-model="dialog" max-width="900">
+  <v-dialog v-model="dialog" max-width="900" persistent>
     <template #activator="{ props }">
-      <v-btn v-bind="props" color="primary">Crear Proyecto</v-btn>
+      <v-btn v-bind="props" color="primary" class="text-white font-bold">
+        + Crear Proyecto
+      </v-btn>
     </template>
 
-    <v-card class="pa-6 rounded-xl elevation-4">
-      <v-card-title class="text-h5 font-weight-bold">Crear Proyecto</v-card-title>
+    <v-card class="pa-6 rounded-2xl elevation-10">
+      <v-card-title class="text-h5 font-weight-bold text-primary mb-2">
+        🗂️ Nuevo Proyecto
+      </v-card-title>
+
+      <v-divider class="mb-4" />
+
       <v-card-text>
-        <v-form ref="form" @submit.prevent="submitProyecto">
+        <v-form ref="form" v-model="formValid" @submit.prevent="submitProyecto">
           <v-row dense>
             <v-col cols="12" md="6">
-              <v-text-field v-model="proyecto.titulo" label="Título" required />
+              <v-text-field
+                v-model="proyecto.titulo"
+                label="Título del Proyecto"
+                :rules="[rules.required]"
+                prepend-inner-icon="mdi-format-title"
+                placeholder="Ej: Rediseño de sitio web"
+                clearable
+                required
+              />
             </v-col>
+
             <v-col cols="12" md="6">
-              <v-text-field v-model="proyecto.precio" label="Precio" type="number" prefix="$" required />
+              <v-text-field
+                v-model.number="proyecto.precio"
+                label="Presupuesto (USD)"
+                type="number"
+                prefix="$"
+                :rules="[rules.required, rules.numeric]"
+                prepend-inner-icon="mdi-cash-multiple"
+                placeholder="Ej: 1500"
+                clearable
+                required
+              />
             </v-col>
+
             <v-col cols="12">
-              <v-textarea v-model="proyecto.descripcion" label="Descripción" auto-grow />
+              <v-textarea
+                v-model="proyecto.descripcion"
+                label="Descripción"
+                auto-grow
+                rows="2"
+                prepend-inner-icon="mdi-text"
+                placeholder="Describe los objetivos del proyecto"
+                clearable
+              />
             </v-col>
+
             <v-col cols="12" md="6">
-              <v-text-field v-model="proyecto.fecha_inicio" label="Fecha Inicio" type="date" required />
+              <v-text-field
+                v-model="proyecto.fecha_inicio"
+                label="Fecha de Inicio"
+                type="date"
+                :rules="[rules.required]"
+                prepend-inner-icon="mdi-calendar-start"
+                required
+              />
             </v-col>
+
             <v-col cols="12" md="6">
-              <v-text-field v-model="proyecto.fecha_final" label="Fecha Final" type="date" required />
+              <v-text-field
+                v-model="proyecto.fecha_final"
+                label="Fecha de Finalización"
+                type="date"
+                :rules="[rules.required]"
+                prepend-inner-icon="mdi-calendar-end"
+                required
+              />
             </v-col>
+
             <v-col cols="12" md="6">
               <v-select
                 v-model="proyecto.encargado"
@@ -31,17 +83,26 @@
                 label="Encargado"
                 item-title="nombre"
                 item-value="id"
+                prepend-inner-icon="mdi-account-tie"
+                :rules="[rules.required]"
+                placeholder="Selecciona un responsable"
+                clearable
                 required
               />
             </v-col>
+
             <v-col cols="12" md="6">
               <v-select
                 v-model="proyecto.estado"
                 :items="estados"
-                label="Estado"
+                label="Estado del Proyecto"
+                prepend-inner-icon="mdi-flag"
+                :rules="[rules.required]"
+                clearable
                 required
               />
             </v-col>
+
             <v-col cols="12" md="6">
               <v-select
                 v-model="proyecto.cliente"
@@ -49,22 +110,35 @@
                 label="Cliente"
                 item-title="nombre"
                 item-value="id"
+                prepend-inner-icon="mdi-account-box"
+                :rules="[rules.required]"
+                clearable
                 required
               />
             </v-col>
+
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="tareaDescripcion"
-                label="Descripción de Tarea"
-                placeholder="Opcional"
+                label="Descripción de tarea (opcional)"
+                placeholder="Ej: Crear wireframes"
+                prepend-inner-icon="mdi-playlist-plus"
+                clearable
               />
             </v-col>
           </v-row>
         </v-form>
       </v-card-text>
+
+      <v-divider class="my-4" />
+
       <v-card-actions class="justify-end">
-        <v-btn text color="error" @click="dialog = false">Cancelar</v-btn>
-        <v-btn color="primary" @click="submitProyecto">Crear Proyecto</v-btn>
+        <v-btn color="grey-lighten-2" text @click="closeDialog">
+          Cancelar
+        </v-btn>
+        <v-btn color="primary" class="text-white" @click="submitProyecto">
+          Guardar Proyecto
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -75,17 +149,18 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const emit = defineEmits(['proyecto-creado']);
-const dialog = ref(false);
-
 const router = useRouter();
+
+const dialog = ref(false);
 const form = ref();
+const formValid = ref(false);
 
 const proyecto = ref({
   titulo: '',
   descripcion: '',
   fecha_inicio: '',
   fecha_final: '',
-  precio: 0,
+  precio: null,
   encargado: null,
   estado: '',
   cliente: null,
@@ -105,10 +180,38 @@ const clientes = ref([
   { id: 2, nombre: 'Cliente B' },
 ]);
 
-function submitProyecto() {
-  console.log('Proyecto creado:', proyecto.value);
+const rules = {
+  required: (value: any) => !!value || 'Este campo es obligatorio',
+  numeric: (value: any) => !isNaN(value) || 'Debe ser un número válido',
+};
+
+function resetForm() {
+  proyecto.value = {
+    titulo: '',
+    descripcion: '',
+    fecha_inicio: '',
+    fecha_final: '',
+    precio: null,
+    encargado: null,
+    estado: '',
+    cliente: null,
+  };
+  tareaDescripcion.value = '';
+  form.value?.resetValidation();
+}
+
+function closeDialog() {
+  dialog.value = false;
+  resetForm();
+}
+
+async function submitProyecto() {
+  const isValid = await form.value?.validate();
+  if (!isValid.valid) return;
+
   emit('proyecto-creado', proyecto.value);
   dialog.value = false;
+  resetForm();
 
   if (tareaDescripcion.value.trim()) {
     router.push({ name: 'Tareas' });
@@ -118,7 +221,6 @@ function submitProyecto() {
 
 <style scoped>
 .v-card-title {
-  background-color: #f5f5f5;
-  color: #b88c3a;
+  background-color: #f3f4f6;
 }
 </style>

@@ -16,16 +16,17 @@ import Reportes from '@/views/Reportes.vue'
 import Calendario from '@/views/Calendario.vue'
 import Roles from '@/views/Roles.vue'
 import Usuarios from '@/views/Usuarios.vue'
+import Equipos from '@/views/Equipos.vue'
 const routes = [
-  {
-    path: '/',
-    name: '/incio',
-    component: Inicio,
-  },
   {
     path: '/auth',
     component: authLayout,
     children: [
+    {
+    path: '/',
+    name: 'auth.inicio',
+    component: Inicio,
+    },
       {
         path: '/login',
         name: 'auth.login',
@@ -81,6 +82,11 @@ const routes = [
         path: '/reportes',
         name: 'main.reportes',
         component: Reportes
+      },
+       {
+        path: '/equipos',
+        name: 'main.equipos',
+        component: Equipos
       },
     ],
   }

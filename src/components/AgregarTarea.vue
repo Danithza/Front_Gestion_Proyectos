@@ -1,51 +1,70 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600">
+  <v-dialog v-model="dialog" max-width="600" persistent>
     <template #activator="{ props }">
       <v-btn v-bind="props" color="primary">Agregar tarea</v-btn>
     </template>
 
     <v-card>
-      <v-card-title class="text-h6">Agregar nueva tarea</v-card-title>
+      <v-card-title class="text-h6">📝 Agregar nueva tarea</v-card-title>
       <v-card-text>
-        <v-form ref="formRef" @submit.prevent="guardarTarea">
+        <v-form ref="formRef" v-model="formValid">
           <v-text-field
             v-model="form.titulo"
             label="Título"
+            :rules="[rules.required]"
+            prepend-inner-icon="mdi-format-title"
+            clearable
             required
-          ></v-text-field>
+          />
 
           <v-textarea
             v-model="form.descripcion"
             label="Descripción"
+            :rules="[rules.required]"
+            prepend-inner-icon="mdi-text"
+            clearable
             required
-          ></v-textarea>
+          />
 
           <v-select
             v-model="form.encargado"
             :items="usuarios"
             label="Encargado"
+            :rules="[rules.required]"
+            prepend-inner-icon="mdi-account"
+            clearable
             required
-          ></v-select>
+          />
 
           <v-select
             v-model="form.proyecto"
             :items="proyectos"
             label="Proyecto"
-          ></v-select>
+            :rules="[rules.required]"
+            prepend-inner-icon="mdi-folder"
+            clearable
+            required
+          />
 
           <v-select
             v-model="form.estado"
             :items="estados"
             label="Estado"
+            :rules="[rules.required]"
+            prepend-inner-icon="mdi-flag"
+            clearable
             required
-          ></v-select>
+          />
 
           <v-select
             v-model="form.prioridad"
             :items="prioridades"
             label="Prioridad"
+            :rules="[rules.required]"
+            prepend-inner-icon="mdi-alert"
+            clearable
             required
-          ></v-select>
+          />
 
           <v-menu
             v-model="menu"
@@ -59,6 +78,7 @@
                 label="Fecha Límite"
                 readonly
                 v-bind="props"
+                prepend-inner-icon="mdi-calendar"
               />
             </template>
             <v-date-picker
@@ -71,14 +91,16 @@
           <v-textarea
             v-model="form.comentario"
             label="Comentario"
-          ></v-textarea>
+            prepend-inner-icon="mdi-comment"
+            clearable
+          />
         </v-form>
       </v-card-text>
 
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn color="grey" @click="dialog = false">Cancelar</v-btn>
-        <v-btn color="primary" @click="guardarTarea">Guardar</v-btn>
+        <v-btn color="primary" :disabled="!formValid" @click="guardarTarea">Guardar</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -89,6 +111,8 @@ import { ref } from 'vue'
 
 const dialog = ref(false)
 const menu = ref(false)
+const formRef = ref()
+const formValid = ref(false)
 
 const usuarios = ['Ana', 'Luis', 'Carlos']
 const proyectos = ['Proyecto A', 'Proyecto B']
@@ -108,7 +132,14 @@ const form = ref({
 
 const emit = defineEmits(['tarea-creada'])
 
-function guardarTarea() {
+const rules = {
+  required: (value: any) => !!value || 'Este campo es obligatorio',
+}
+
+async function guardarTarea() {
+  const isValid = await formRef.value?.validate()
+  if (!isValid) return // Evita guardar si hay errores
+
   const nuevaTarea = {
     ...form.value,
     id: Date.now(),
@@ -117,7 +148,6 @@ function guardarTarea() {
   emit('tarea-creada', nuevaTarea)
   dialog.value = false
 
-  // Reiniciar formulario
   form.value = {
     titulo: '',
     descripcion: '',
@@ -128,5 +158,7 @@ function guardarTarea() {
     proyecto: '',
     comentario: '',
   }
+
+  formRef.value?.resetValidation()
 }
 </script>

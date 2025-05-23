@@ -47,6 +47,7 @@ const gestionItems = [
   { title: 'Tareas', icon: 'mdi-format-list-checkbox', to: '/tareas' },
   { title: 'Calendario', icon: 'mdi-calendar-month', to: '/calendario' },
   { title: 'Reportes', icon: 'mdi-chart-box-outline', to: '/reportes' },
+  { title: 'Equipos', icon: 'mdi-account-group-outline', to: '/equipos' },
 ]
 
 const configItems = [

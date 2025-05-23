@@ -77,9 +77,8 @@
     </v-dialog>
   </v-container>
 </template>
-
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 
 interface Rol {
   id: number
@@ -107,30 +106,50 @@ const roles = ref<Rol[]>([
   { id: 6, nombre: 'Cliente' }
 ])
 
-const usuarios = ref<Usuario[]>([
-  {
-    id: 1,
-    nombre: 'Carlos',
-    apellido: 'Gómez',
-    username: 'cgomez',
-    password: '123456',
-    documentoId: '12345678',
-    correo: 'carlos@example.com',
-    rolId: 1,
-    fotoPreview: ''
-  },
-  {
-    id: 2,
-    nombre: 'Ana',
-    apellido: 'Ruiz',
-    username: 'aruiz',
-    password: 'abcdef',
-    documentoId: '87654321',
-    correo: 'ana@example.com',
-    rolId: 2,
-    fotoPreview: ''
+const usuarios = ref<Usuario[]>([])
+
+// --- Cargar usuarios desde localStorage al montar ---
+onMounted(() => {
+  const datosGuardados = localStorage.getItem('usuarios')
+  if (datosGuardados) {
+    usuarios.value = JSON.parse(datosGuardados)
+  } else {
+    // Si no hay en localStorage, carga los usuarios iniciales
+    usuarios.value = [
+      {
+        id: 1,
+        nombre: 'Carlos',
+        apellido: 'Gómez',
+        username: 'cgomez',
+        password: '123456',
+        documentoId: '12345678',
+        correo: 'carlos@example.com',
+        rolId: 1,
+        fotoPreview: ''
+      },
+      {
+        id: 2,
+        nombre: 'Ana',
+        apellido: 'Ruiz',
+        username: 'aruiz',
+        password: 'abcdef',
+        documentoId: '87654321',
+        correo: 'ana@example.com',
+        rolId: 2,
+        fotoPreview: ''
+      }
+    ]
   }
-])
+})
+
+// --- Guardar usuarios en localStorage cada vez que cambian ---
+watch(
+  usuarios,
+  (nuevosUsuarios) => {
+    localStorage.setItem('usuarios', JSON.stringify(nuevosUsuarios))
+  },
+  { deep: true }
+)
 
 const dialogo = ref(false)
 const usuarioEditando = ref<Usuario | null>(null)

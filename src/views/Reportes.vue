@@ -1,108 +1,124 @@
 <template>
   <v-container>
-    <v-row justify="space-between" align="center" class="mb-4">
-      <v-col cols="6">
-        <h2 class="text-h5 font-weight-bold">Gestión de Equipos</h2>
-      </v-col>
-      <v-col cols="6" class="text-end">
-        <v-btn color="primary" class="me-2" @click="abrirDialogo">Agregar Equipo</v-btn>
+    <h2 class="text-h5 font-weight-bold mb-4">Gestión de Equipos</h2>
+
+    <FormularioEquipo
+      :equipo="nuevoEquipo"
+      :modo-edicion="modoEdicion"
+      :usuarios="usuarios"
+      @guardar="guardarEquipo"
+      @cancelar="resetFormulario"
+    />
+
+    <v-row>
+      <v-col
+        v-for="equipo in equipos"
+        :key="equipo.id"
+        cols="12"
+        md="6"
+        lg="4"
+      >
+        <v-card>
+          <v-card-title class="font-weight-bold">
+            {{ equipo.nombre }}
+          </v-card-title>
+          <v-card-text>
+            <div class="mb-2 text-caption text-grey">Miembros:</div>
+            <v-chip-group column>
+              <v-chip
+                v-for="id in equipo.miembros"
+                :key="id"
+                color="blue"
+                class="ma-1"
+                size="small"
+              >
+                {{ obtenerNombreUsuario(id) }}
+              </v-chip>
+            </v-chip-group>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn icon color="blue" @click="editarEquipo(equipo)">
+              <v-icon>mdi-pencil</v-icon>
+            </v-btn>
+            <v-btn icon color="red" @click="eliminarEquipo(equipo.id)">
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
       </v-col>
     </v-row>
-
-    <v-data-table
-      :headers="headers"
-      :items="equipos"
-      item-value="id"
-      class="elevation-1"
-    >
-      <template #item.acciones="{ item }">
-        <v-icon class="me-2" color="primary" @click="editarEquipo(item)">mdi-pencil</v-icon>
-        <v-icon color="red" @click="eliminarEquipo(item.id)">mdi-delete</v-icon>
-      </template>
-    </v-data-table>
-
-    <!-- Diálogo -->
-    <v-dialog v-model="dialogo" max-width="500">
-      <v-card>
-        <v-card-title>
-          <span class="text-h6">{{ equipoEditando ? 'Editar Equipo' : 'Nuevo Equipo' }}</span>
-        </v-card-title>
-
-        <v-card-text>
-          <v-text-field label="Nombre del Equipo" v-model="form.nombre" />
-          <v-text-field label="Responsable" v-model="form.responsable" />
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="blue darken-1" text @click="cerrarDialogo">Cancelar</v-btn>
-          <v-btn color="blue darken-1" text @click="guardarEquipo">Guardar</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
   </v-container>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { ref } from 'vue'
+import FormularioEquipo from '@/components/AgregarEquipo.vue'
 
-
+interface Usuario {
+  id: number
+  nombre: string
+}
 
 interface Equipo {
   id: number
   nombre: string
-  responsable: string
+  miembros: number[]
 }
 
-const headers = [
-  { title: 'ID', key: 'id' },
-  { title: 'Nombre del Equipo', key: 'nombre' },
-  { title: 'Responsable', key: 'responsable' },
-  { title: 'Acciones', key: 'acciones', sortable: false }
-]
-
-const equipos = ref<Equipo[]>([
-  { id: 1, nombre: 'Desarrollo', responsable: 'Carlos Gómez' },
-  { id: 2, nombre: 'Diseño', responsable: 'Ana Ruiz' }
+const usuarios = ref<Usuario[]>([
+  { id: 1, nombre: 'Juan Pérez' },
+  { id: 2, nombre: 'Ana Torres' },
+  { id: 3, nombre: 'Carlos Gómez' },
+  { id: 4, nombre: 'Luisa Martínez' }
 ])
 
-const dialogo = ref(false)
-const equipoEditando = ref<Equipo | null>(null)
-const form = ref({ nombre: '', responsable: '' })
+const equipos = ref<Equipo[]>([
+  { id: 1, nombre: 'Equipo Alpha', miembros: [1, 2] },
+  { id: 2, nombre: 'Equipo Beta', miembros: [3] }
+])
 
-const abrirDialogo = () => {
-  equipoEditando.value = null
-  form.value = { nombre: '', responsable: '' }
-  dialogo.value = true
-}
+const nuevoEquipo = ref<Equipo>({
+  id: 0,
+  nombre: '',
+  miembros: []
+})
 
-const cerrarDialogo = () => {
-  dialogo.value = false
-}
+const modoEdicion = ref(false)
+const equipoEditandoId = ref<number | null>(null)
 
-const guardarEquipo = () => {
-  if (equipoEditando.value) {
-    // Editar
-    const index = equipos.value.findIndex(e => e.id === equipoEditando.value?.id)
+const guardarEquipo = (equipo: Equipo) => {
+  if (modoEdicion.value && equipoEditandoId.value !== null) {
+    const index = equipos.value.findIndex(e => e.id === equipoEditandoId.value)
     if (index !== -1) {
-      equipos.value[index] = { ...equipoEditando.value, ...form.value }
+      equipos.value[index] = { ...equipo, id: equipoEditandoId.value }
     }
   } else {
-    // Crear nuevo
-    const nuevoId = Math.max(...equipos.value.map(e => e.id)) + 1
-    equipos.value.push({ id: nuevoId, ...form.value })
+    const nuevoId = equipos.value.length > 0
+      ? Math.max(...equipos.value.map(e => e.id)) + 1
+      : 1
+    equipos.value.push({ ...equipo, id: nuevoId })
   }
-  cerrarDialogo()
+  resetFormulario()
 }
 
 const editarEquipo = (equipo: Equipo) => {
-  equipoEditando.value = { ...equipo }
-  form.value = { nombre: equipo.nombre, responsable: equipo.responsable }
-  dialogo.value = true
+  modoEdicion.value = true
+  equipoEditandoId.value = equipo.id
+  nuevoEquipo.value = { ...equipo }
 }
 
 const eliminarEquipo = (id: number) => {
   equipos.value = equipos.value.filter(e => e.id !== id)
 }
 
+const resetFormulario = () => {
+  nuevoEquipo.value = { id: 0, nombre: '', miembros: [] }
+  modoEdicion.value = false
+  equipoEditandoId.value = null
+}
+
+const obtenerNombreUsuario = (id: number) => {
+  const usuario = usuarios.value.find(u => u.id === id)
+  return usuario ? usuario.nombre : 'Desconocido'
+}
 </script>

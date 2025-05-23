@@ -15,45 +15,51 @@
 
     <v-row>
       <v-col
-        v-for="proyecto in proyectosFiltrados"
-        :key="proyecto.id"
+        v-for="(slot, index) in tarjetasVisibles"
+        :key="index"
         cols="12"
         md="6"
         lg="4"
       >
         <v-card class="elevation-3" rounded="xl">
-          <v-card-title class="bg-primary text-white">
-            {{ proyecto.titulo }}
-          </v-card-title>
-          <v-card-text>
-            <div class="text-body-2 mb-2">{{ proyecto.descripcion }}</div>
-            <v-chip class="ma-1" color="indigo" text-color="white">
-              Inicio: {{ proyecto.fecha_inicio }}
-            </v-chip>
-            <v-chip class="ma-1" color="deep-purple accent-4" text-color="white">
-              Fin: {{ proyecto.fecha_final }}
-            </v-chip>
-            <div class="mt-2">
-              <strong>Precio:</strong> ${{ proyecto.precio }}<br />
-              <strong>Encargado:</strong> {{ proyecto.encargado }}<br />
-              <strong>Cliente:</strong> {{ proyecto.cliente }}<br />
-              <strong>Estado:</strong> {{ proyecto.estado }}<br />
-              <strong>Tareas:</strong>
-              <ul class="pl-4">
-                <li v-for="(tarea, i) in proyecto.tareas" :key="i">
-                  {{ tarea.nombre }} – {{ tarea.encargado }}
-                </li>
-              </ul>
-            </div>
-          </v-card-text>
-          <v-card-actions>
-            <v-btn icon color="blue" @click="editarProyecto(proyecto)">
-              <v-icon>mdi-pencil</v-icon>
-            </v-btn>
-            <v-btn icon color="red" @click="eliminarProyecto(proyecto)">
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
-          </v-card-actions>
+          <template v-if="slot">
+            <v-card-title class="bg-primary text-white">{{ slot.titulo }}</v-card-title>
+            <v-card-text>
+              <div class="text-body-2 mb-2">{{ slot.descripcion }}</div>
+              <v-chip class="ma-1" color="indigo" text-color="white">
+                Inicio: {{ slot.fecha_inicio }}
+              </v-chip>
+              <v-chip class="ma-1" color="deep-purple accent-4" text-color="white">
+                Fin: {{ slot.fecha_final }}
+              </v-chip>
+              <div class="mt-2">
+                <strong>Precio:</strong> ${{ slot.precio }}<br />
+                <strong>Encargado:</strong> {{ slot.encargado }}<br />
+                <strong>Cliente:</strong> {{ slot.cliente }}<br />
+                <strong>Estado:</strong> {{ slot.estado }}<br />
+                <strong>Tareas:</strong>
+                <ul class="pl-4">
+                  <li v-for="(tarea, i) in slot.tareas" :key="i">
+                    {{ tarea.nombre }} – {{ tarea.encargado }}
+                  </li>
+                </ul>
+              </div>
+            </v-card-text>
+            <v-card-actions>
+              <v-btn icon color="blue" @click="editarProyecto(slot)">
+                <v-icon>mdi-pencil</v-icon>
+              </v-btn>
+              <v-btn icon color="red" @click="eliminarProyecto(slot)">
+                <v-icon>mdi-delete</v-icon>
+              </v-btn>
+            </v-card-actions>
+          </template>
+
+          <!-- Tarjeta vacía -->
+          <template v-else>
+            <v-card-title class="text-grey text-center">Tarjeta Vacía</v-card-title>
+            <v-card-text class="text-grey text-center">Aún no se ha asignado un proyecto.</v-card-text>
+          </template>
         </v-card>
       </v-col>
     </v-row>
@@ -80,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import ProyectoForm from '@/components/ProyectoForm.vue'
 
 interface Tarea {
@@ -116,6 +122,24 @@ const proyectoEditado = ref<Proyecto>({
   estado: '',
   tareas: [],
 })
+
+// Tarjetas visibles (3 mínimo)
+const tarjetasVisibles = computed(() => {
+  const visibles = [...proyectosFiltrados.value]
+  while (visibles.length < 3) visibles.push(null)
+  return visibles
+})
+
+// Cargar desde localStorage
+onMounted(() => {
+  const guardados = localStorage.getItem('proyectos')
+  if (guardados) proyectos.value = JSON.parse(guardados)
+})
+
+// Guardar al editar
+watch(proyectos, (nuevaLista) => {
+  localStorage.setItem('proyectos', JSON.stringify(nuevaLista))
+}, { deep: true })
 
 const proyectosFiltrados = computed(() => {
   return proyectos.value.filter((p) =>
