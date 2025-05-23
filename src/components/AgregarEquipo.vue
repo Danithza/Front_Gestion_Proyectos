@@ -9,6 +9,7 @@
         </v-btn>
       </v-card-title>
   
+      
       <v-card-text>
         <v-form @submit.prevent="guardarEquipo" ref="form">
           <!-- INFORMACIÓN BÁSICA -->

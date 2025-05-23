@@ -183,3 +183,5 @@ const toggleActivo = (rol: Rol) => {
   color: #d32f2f; /* rojo */
 }
 </style>
+
+

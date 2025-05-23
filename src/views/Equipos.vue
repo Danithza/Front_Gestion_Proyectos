@@ -141,6 +141,7 @@ function guardarEquipo() {
     return;
   }
 
+  
   if (equipo.id) {
     // Editar existente
     const idx = equipos.value.findIndex(e => e.id === equipo.id);

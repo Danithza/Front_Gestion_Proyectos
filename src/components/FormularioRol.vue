@@ -11,7 +11,7 @@
             :rules="[v => !!v || 'El nombre es requerido', v => v.length <= 50 || 'Máximo 50 caracteres']"
             required
           />
-  
+
           <v-textarea
             v-model="form.descripcion"
             label="Descripción del rol"
