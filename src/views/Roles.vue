@@ -4,38 +4,36 @@
 
     <v-row dense>
       <v-col
+        v-for="rol in roles"
+        :key="rol.id"
         cols="12"
         sm="6"
         md="4"
         lg="3"
-        v-for="rol in roles"
-        :key="rol.id"
         class="d-flex"
       >
         <v-card
           :color="rol.activo ? 'blue-lighten-5' : 'grey-lighten-3'"
           class="flex-grow-1 d-flex flex-column justify-space-between"
           height="280"
-          elevation="3"
+          elevation="2"
         >
           <div>
-            <v-card-title class="text-h6 text-blue-darken-2">
+            <v-card-title class="text-blue-darken-2 text-h6">
               {{ rol.nombre }}
             </v-card-title>
-            <v-card-subtitle
-              class="text-subtitle-2"
-              :class="rol.activo ? 'text-green' : 'text-red'"
-            >
+
+            <v-card-subtitle :class="rol.activo ? 'text-green' : 'text-red'">
               {{ rol.activo ? 'Activo' : 'Inactivo' }}
             </v-card-subtitle>
 
-            <v-card-subtitle class="text-subtitle-2 text-blue-grey-darken-1">
-              {{ rol.descripcion }}
-            </v-card-subtitle>
+            <v-card-text class="py-2 text-blue-grey-darken-2">
+              {{ rol.descripcion || 'Sin descripción' }}
+            </v-card-text>
 
-            <v-card-text class="pt-2">
+            <v-card-text class="pt-0">
               <strong class="text-blue-darken-3">Permisos:</strong>
-              <v-chip-group column class="mt-2" style="max-height: 100px; overflow-y: auto;">
+              <v-chip-group column class="mt-2 overflow-y-auto" style="max-height: 90px;">
                 <v-chip
                   v-for="permiso in rol.permisos"
                   :key="permiso"
@@ -52,18 +50,32 @@
           </div>
 
           <v-card-actions class="justify-end">
-            <v-btn icon variant="text" color="blue-darken-1" @click="editarRol(rol)">
-              <v-icon>mdi-pencil</v-icon>
-            </v-btn>
-            <v-btn icon variant="text" color="blue-darken-3" @click="eliminarRol(rol.id)">
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
             <v-btn
               icon
               variant="text"
-              :color="rol.activo ? 'green darken-2' : 'red darken-2'"
+              color="blue-darken-1"
+              @click="editarRol(rol)"
+              aria-label="Editar rol"
+            >
+              <v-icon>mdi-pencil</v-icon>
+            </v-btn>
+
+            <v-btn
+              icon
+              variant="text"
+              color="blue-darken-3"
+              @click="eliminarRol(rol.id)"
+              aria-label="Eliminar rol"
+            >
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+
+            <v-btn
+              icon
+              variant="text"
+              :color="rol.activo ? 'green' : 'red'"
               @click="toggleActivo(rol)"
-              :title="rol.activo ? 'Desactivar rol' : 'Activar rol'"
+              :aria-label="rol.activo ? 'Desactivar rol' : 'Activar rol'"
             >
               <v-icon>{{ rol.activo ? 'mdi-eye' : 'mdi-eye-off' }}</v-icon>
             </v-btn>
@@ -82,7 +94,7 @@
       Agregar Rol
     </v-btn>
 
-    <!-- Modal de formulario -->
+    <!-- Diálogo con Formulario -->
     <v-dialog v-model="mostrarFormulario" max-width="600px">
       <FormularioRol
         :rol="rolSeleccionado"
@@ -95,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import FormularioRol from '@/components/FormularioRol.vue'
 
 interface Rol {
@@ -114,7 +126,7 @@ const rolSeleccionado = ref<Rol>({
   nombre: '',
   descripcion: '',
   permisos: [],
-  activo: true
+  activo: true,
 })
 const modoEdicion = ref(false)
 const mostrarFormulario = ref(false)
@@ -124,38 +136,32 @@ onMounted(() => {
   roles.value = saved ? JSON.parse(saved) : []
 })
 
-watch(
-  roles,
-  newVal => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newVal))
-  },
-  { deep: true }
-)
+watch(roles, (nuevosRoles) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevosRoles))
+}, { deep: true })
 
-const agregarRol = () => {
+function agregarRol() {
   rolSeleccionado.value = {
     id: 0,
     nombre: '',
     descripcion: '',
     permisos: [],
-    activo: true
+    activo: true,
   }
   modoEdicion.value = false
   mostrarFormulario.value = true
 }
 
-const editarRol = (rol: Rol) => {
+function editarRol(rol: Rol) {
   rolSeleccionado.value = { ...rol }
   modoEdicion.value = true
   mostrarFormulario.value = true
 }
 
-const guardarRol = (rol: Rol) => {
+function guardarRol(rol: Rol) {
   if (modoEdicion.value) {
-    const index = roles.value.findIndex(r => r.id === rol.id)
-    if (index !== -1) {
-      roles.value[index] = { ...rol }
-    }
+    const idx = roles.value.findIndex(r => r.id === rol.id)
+    if (idx !== -1) roles.value[idx] = { ...rol }
   } else {
     const nuevoId = roles.value.length ? Math.max(...roles.value.map(r => r.id)) + 1 : 1
     roles.value.push({ ...rol, id: nuevoId })
@@ -163,25 +169,20 @@ const guardarRol = (rol: Rol) => {
   mostrarFormulario.value = false
 }
 
-const eliminarRol = (id: number) => {
+function eliminarRol(id: number) {
   roles.value = roles.value.filter(r => r.id !== id)
 }
 
-const toggleActivo = (rol: Rol) => {
-  const index = roles.value.findIndex(r => r.id === rol.id)
-  if (index !== -1) {
-    roles.value[index].activo = !roles.value[index].activo
-  }
+function toggleActivo(rol: Rol) {
+  rol.activo = !rol.activo
 }
 </script>
 
 <style scoped>
 .text-green {
-  color: #388e3c; /* verde */
+  color: #2e7d32;
 }
 .text-red {
-  color: #d32f2f; /* rojo */
+  color: #c62828;
 }
 </style>
-
-

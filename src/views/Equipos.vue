@@ -22,18 +22,17 @@
               <v-icon color="primary" class="mr-2">mdi-laptop</v-icon>
               <span class="font-weight-medium">{{ equipo.nombre }}</span>
             </div>
-
             <div>
               <v-btn icon size="small" @click="editarEquipo(equipo)">
                 <v-icon color="blue">mdi-pencil</v-icon>
               </v-btn>
               <v-btn icon size="small" @click="eliminarEquipo(equipo.id)">
-                <v-icon color="blue">mdi-delete</v-icon>
+                <v-icon color="red">mdi-delete</v-icon>
               </v-btn>
             </div>
           </v-card-title>
 
-          <v-card-subtitle class="mt-2">Color: {{ equipo.color }}</v-card-subtitle>
+          <v-card-subtitle class="mt-2">Color: {{ equipo.color || 'Sin especificar' }}</v-card-subtitle>
           <v-card-text>
             Observación: {{ equipo.observacion || 'Sin observación' }}
           </v-card-text>
@@ -47,7 +46,7 @@
       color="primary"
       class="ma-4"
       style="position: fixed; bottom: 16px; right: 16px;"
-      @click="abrirFormulario()"
+      @click="abrirFormulario"
     >
       <v-icon>mdi-plus</v-icon>
     </v-btn>
@@ -56,40 +55,38 @@
     <v-dialog v-model="dialog" max-width="600">
       <v-card>
         <v-card-title class="text-h6">
-          {{ equipo.id ? 'Editar Equipo' : 'Crear Equipo' }}
+          {{ formEquipo.id ? 'Editar Equipo' : 'Crear Equipo' }}
         </v-card-title>
 
         <v-card-text>
-          <v-form ref="formRef" @submit.prevent="guardarEquipo">
-            <v-text-field v-model="equipo.nombre" label="Nombre del equipo" required />
-            <v-text-field v-model="equipo.color" label="Color" />
-            <v-textarea v-model="equipo.observacion" label="Observación" />
-
+          <v-form ref="formRef" @submit.prevent="guardarEquipo" lazy-validation>
+            <v-text-field v-model="formEquipo.nombre" label="Nombre del equipo" :rules="[v => !!v || 'Campo requerido']" />
+            <v-text-field v-model="formEquipo.color" label="Color" />
+            <v-textarea v-model="formEquipo.observacion" label="Observación" />
             <v-select
-              v-model="equipo.proyecto"
+              v-model="formEquipo.proyecto"
               :items="proyectos"
               item-title="nombre"
               item-value="id"
               label="Proyecto"
-              required
+              :rules="[v => !!v || 'Campo requerido']"
             />
-
             <v-select
-              v-model="equipo.miembros"
+              v-model="formEquipo.miembros"
               :items="usuarios"
               item-title="nombre"
               item-value="id"
               label="Miembros"
               multiple
               chips
-              required
+              :rules="[v => v?.length > 0 || 'Selecciona al menos un miembro']"
             />
           </v-form>
         </v-card-text>
 
         <v-card-actions>
           <v-spacer />
-          <v-btn color="blue-darken-1" variant="flat" @click="guardarEquipo">Guardar</v-btn>
+          <v-btn color="primary" variant="flat" @click="guardarEquipo">Guardar</v-btn>
           <v-btn color="grey" variant="text" @click="cerrarFormulario">Cancelar</v-btn>
         </v-card-actions>
       </v-card>
@@ -98,85 +95,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch } from 'vue'
 
-const dialog = ref(false);
-const formRef = ref();
+const dialog = ref(false)
+const formRef = ref()
 
 const usuarios = [
   { id: 1, nombre: 'Laura Gómez' },
   { id: 2, nombre: 'Carlos Pérez' },
   { id: 3, nombre: 'Ana Torres' },
-];
+]
 
 const proyectos = [
   { id: 101, nombre: 'Proyecto Alfa' },
   { id: 102, nombre: 'Proyecto Beta' },
-];
+]
 
-const equipos = ref<any[]>(JSON.parse(localStorage.getItem('equipos') || '[]'));
+const equipos = ref<any[]>(JSON.parse(localStorage.getItem('equipos') || '[]'))
 
-const equipo = reactive({
+const defaultEquipo = () => ({
   id: 0,
   nombre: '',
   color: '',
   observacion: '',
   proyecto: null,
   miembros: [] as number[],
-});
+})
+
+const formEquipo = reactive(defaultEquipo())
 
 function abrirFormulario() {
-  resetearFormulario();
-  dialog.value = true;
+  Object.assign(formEquipo, defaultEquipo())
+  dialog.value = true
 }
 
 function editarEquipo(data: any) {
-  Object.assign(equipo, { ...data });
-  dialog.value = true;
+  Object.assign(formEquipo, { ...data })
+  dialog.value = true
 }
 
 function guardarEquipo() {
-  if (!equipo.nombre || !equipo.proyecto || equipo.miembros.length === 0) {
-    alert('Por favor completa los campos obligatorios: Nombre, Proyecto y Miembros');
-    return;
-  }
+  const form = formRef.value
+  form?.validate().then((valid: boolean) => {
+    if (!valid) return
 
-  
-  if (equipo.id) {
-    // Editar existente
-    const idx = equipos.value.findIndex(e => e.id === equipo.id);
-    if (idx !== -1) equipos.value[idx] = { ...equipo };
-  } else {
-    // Crear nuevo
-    equipo.id = Date.now();
-    equipos.value.push({ ...equipo });
-  }
+    if (formEquipo.id) {
+      const idx = equipos.value.findIndex(e => e.id === formEquipo.id)
+      if (idx !== -1) equipos.value[idx] = { ...formEquipo }
+    } else {
+      formEquipo.id = Date.now()
+      equipos.value.push({ ...formEquipo })
+    }
 
-  localStorage.setItem('equipos', JSON.stringify(equipos.value));
-  cerrarFormulario();
+    cerrarFormulario()
+  })
 }
 
 function eliminarEquipo(id: number) {
-  equipos.value = equipos.value.filter(e => e.id !== id);
-  localStorage.setItem('equipos', JSON.stringify(equipos.value));
+  equipos.value = equipos.value.filter(e => e.id !== id)
+  guardarEnLocalStorage()
 }
 
 function cerrarFormulario() {
-  dialog.value = false;
-  resetearFormulario();
+  dialog.value = false
+  Object.assign(formEquipo, defaultEquipo())
+  formRef.value?.resetValidation()
 }
 
-function resetearFormulario() {
-  equipo.id = 0;
-  equipo.nombre = '';
-  equipo.color = '';
-  equipo.observacion = '';
-  equipo.proyecto = null;
-  equipo.miembros = [];
+function guardarEnLocalStorage() {
+  localStorage.setItem('equipos', JSON.stringify(equipos.value))
 }
 
-// Guarda automáticamente si cambian los equipos
-watch(equipos, () => {
-  localStorage.setItem('equipos', JSON.stringify(equipos.value));
-}, { deep: true });
+watch(equipos, guardarEnLocalStorage, { deep: true })
 </script>
