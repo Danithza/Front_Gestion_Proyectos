@@ -1,116 +1,181 @@
 <template>
-    <v-container>
-      <h2 class="text-h5 font-weight-bold mb-4">Gestión de Equipos</h2>
+  <v-container>
+    <!-- TÍTULO -->
+    <v-row>
+      <v-col>
+        <h1 class="text-h4 font-weight-bold">Gestión de Equipos</h1>
+      </v-col>
+    </v-row>
 
-      <FormularioEquipo
-        :equipo="nuevoEquipo"
-        :modo-edicion="modoEdicion"
-        :usuarios="usuarios"
-        @guardar="guardarEquipo"
-        @cancelar="resetFormulario"
-      />
+    <!-- LISTADO DE EQUIPOS -->
+    <v-row>
+      <v-col
+        v-for="equipo in equipos"
+        :key="equipo.id"
+        cols="12"
+        sm="6"
+        md="4"
+      >
+        <v-card class="pa-4" elevation="2">
+          <v-card-title class="d-flex justify-space-between align-center">
+            <div class="d-flex align-center">
+              <v-icon color="primary" class="mr-2">mdi-laptop</v-icon>
+              <span class="font-weight-medium">{{ equipo.nombre }}</span>
+            </div>
 
-      <v-row>
-        <v-col v-for="equipo in equipos" :key="equipo.id" cols="12" md="6" lg="4">
-          <v-card>
-            <v-card-title class="font-weight-bold">
-              {{ equipo.nombre }}
-            </v-card-title>
-            <v-card-text>
-              <div class="mb-2 text-caption text-grey">Miembros:</div>
-              <v-chip-group column>
-                <v-chip
-                  v-for="id in equipo.miembros"
-                  :key="id"
-                  color="blue"
-                  class="ma-1"
-                  size="small"
-                >
-                  {{ obtenerNombreUsuario(id) }}
-                </v-chip>
-              </v-chip-group>
-            </v-card-text>
-            <v-card-actions>
-              <v-btn icon color="blue" @click="editarEquipo(equipo)">
-                <v-icon>mdi-pencil</v-icon>
+            <div>
+              <v-btn icon size="small" @click="editarEquipo(equipo)">
+                <v-icon color="blue">mdi-pencil</v-icon>
               </v-btn>
-              <v-btn icon color="red" @click="eliminarEquipo(equipo.id)">
-                <v-icon>mdi-delete</v-icon>
+              <v-btn icon size="small" @click="eliminarEquipo(equipo.id)">
+                <v-icon color="blue">mdi-delete</v-icon>
               </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
-  </template>
+            </div>
+          </v-card-title>
 
-  <script setup lang="ts">
-  import { ref } from 'vue'
-  import AgregarEquipo from '@/components/AgregarEquipo.vue'
+          <v-card-subtitle class="mt-2">Color: {{ equipo.color }}</v-card-subtitle>
+          <v-card-text>
+            Observación: {{ equipo.observacion || 'Sin observación' }}
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
-  interface Usuario {
-    id: number
-    nombre: string
+    <!-- BOTÓN FLOTANTE PARA CREAR -->
+    <v-btn
+      icon
+      color="primary"
+      class="ma-4"
+      style="position: fixed; bottom: 16px; right: 16px;"
+      @click="abrirFormulario()"
+    >
+      <v-icon>mdi-plus</v-icon>
+    </v-btn>
+
+    <!-- DIALOGO CON FORMULARIO -->
+    <v-dialog v-model="dialog" max-width="600">
+      <v-card>
+        <v-card-title class="text-h6">
+          {{ equipo.id ? 'Editar Equipo' : 'Crear Equipo' }}
+        </v-card-title>
+
+        <v-card-text>
+          <v-form ref="formRef" @submit.prevent="guardarEquipo">
+            <v-text-field v-model="equipo.nombre" label="Nombre del equipo" required />
+            <v-text-field v-model="equipo.color" label="Color" />
+            <v-textarea v-model="equipo.observacion" label="Observación" />
+
+            <v-select
+              v-model="equipo.proyecto"
+              :items="proyectos"
+              item-title="nombre"
+              item-value="id"
+              label="Proyecto"
+              required
+            />
+
+            <v-select
+              v-model="equipo.miembros"
+              :items="usuarios"
+              item-title="nombre"
+              item-value="id"
+              label="Miembros"
+              multiple
+              chips
+              required
+            />
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="blue-darken-1" variant="flat" @click="guardarEquipo">Guardar</v-btn>
+          <v-btn color="grey" variant="text" @click="cerrarFormulario">Cancelar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, watch } from 'vue';
+
+const dialog = ref(false);
+const formRef = ref();
+
+const usuarios = [
+  { id: 1, nombre: 'Laura Gómez' },
+  { id: 2, nombre: 'Carlos Pérez' },
+  { id: 3, nombre: 'Ana Torres' },
+];
+
+const proyectos = [
+  { id: 101, nombre: 'Proyecto Alfa' },
+  { id: 102, nombre: 'Proyecto Beta' },
+];
+
+const equipos = ref<any[]>(JSON.parse(localStorage.getItem('equipos') || '[]'));
+
+const equipo = reactive({
+  id: 0,
+  nombre: '',
+  color: '',
+  observacion: '',
+  proyecto: null,
+  miembros: [] as number[],
+});
+
+function abrirFormulario() {
+  resetearFormulario();
+  dialog.value = true;
+}
+
+function editarEquipo(data: any) {
+  Object.assign(equipo, { ...data });
+  dialog.value = true;
+}
+
+function guardarEquipo() {
+  if (!equipo.nombre || !equipo.proyecto || equipo.miembros.length === 0) {
+    alert('Por favor completa los campos obligatorios: Nombre, Proyecto y Miembros');
+    return;
   }
 
-  interface Equipo {
-    id: number
-    nombre: string
-    miembros: number[]
+  if (equipo.id) {
+    // Editar existente
+    const idx = equipos.value.findIndex(e => e.id === equipo.id);
+    if (idx !== -1) equipos.value[idx] = { ...equipo };
+  } else {
+    // Crear nuevo
+    equipo.id = Date.now();
+    equipos.value.push({ ...equipo });
   }
 
-  const usuarios = ref<Usuario[]>([
-    { id: 1, nombre: 'Juan Pérez' },
-    { id: 2, nombre: 'Ana Torres' },
-    { id: 3, nombre: 'Carlos Gómez' },
-    { id: 4, nombre: 'Luisa Martínez' }
-  ])
+  localStorage.setItem('equipos', JSON.stringify(equipos.value));
+  cerrarFormulario();
+}
 
-  const equipos = ref<Equipo[]>([
-    { id: 1, nombre: 'Equipo Alpha', miembros: [1, 2] },
-    { id: 2, nombre: 'Equipo Beta', miembros: [3] }
-  ])
+function eliminarEquipo(id: number) {
+  equipos.value = equipos.value.filter(e => e.id !== id);
+  localStorage.setItem('equipos', JSON.stringify(equipos.value));
+}
 
-  const nuevoEquipo = ref<Equipo>({
-    id: 0,
-    nombre: '',
-    miembros: []
-  })
+function cerrarFormulario() {
+  dialog.value = false;
+  resetearFormulario();
+}
 
-  const modoEdicion = ref(false)
-  const equipoEditandoId = ref<number | null>(null)
+function resetearFormulario() {
+  equipo.id = 0;
+  equipo.nombre = '';
+  equipo.color = '';
+  equipo.observacion = '';
+  equipo.proyecto = null;
+  equipo.miembros = [];
+}
 
-  const guardarEquipo = (equipo: Equipo) => {
-    if (modoEdicion.value && equipoEditandoId.value !== null) {
-      const index = equipos.value.findIndex(e => e.id === equipoEditandoId.value)
-      if (index !== -1) {
-        equipos.value[index] = { ...equipo }
-      }
-    } else {
-      const nuevoId = equipos.value.length + 1
-      equipos.value.push({ ...equipo, id: nuevoId })
-    }
-    resetFormulario()
-  }
-
-  const editarEquipo = (equipo: Equipo) => {
-    modoEdicion.value = true
-    equipoEditandoId.value = equipo.id
-    nuevoEquipo.value = { ...equipo }
-  }
-
-  const eliminarEquipo = (id: number) => {
-    equipos.value = equipos.value.filter(e => e.id !== id)
-  }
-
-  const resetFormulario = () => {
-    nuevoEquipo.value = { id: 0, nombre: '', miembros: [] }
-    modoEdicion.value = false
-    equipoEditandoId.value = null
-  }
-
-  const obtenerNombreUsuario = (id: number) => {
-    const usuario = usuarios.value.find(u => u.id === id)
-    return usuario ? usuario.nombre : 'Desconocido'
-  }
-  </script>
+// Guarda automáticamente si cambian los equipos
+watch(equipos, () => {
+  localStorage.setItem('equipos', JSON.stringify(equipos.value));
+}, { deep: true });
+</script>
