@@ -4,12 +4,17 @@
       <v-col cols="6">
         <h2 class="text-h5 font-weight-bold">Gestión de Usuarios</h2>
       </v-col>
-      <v-col cols="6" class="text-end">
-        <v-btn color="primary" @click="abrirDialogo">Agregar Usuario</v-btn>
+      <v-col cols="6" class="text-right">
+        <!-- SOLO este botón que está dentro del componente -->
+        <AgregarUsuario
+          v-model:dialogo="dialogo"
+          :usuario-editando="usuarioEditando"
+          @guardar="guardarUsuario"
+        />
       </v-col>
     </v-row>
 
-    <!-- Vista de tarjetas -->
+    <!-- Tarjetas de usuarios -->
     <v-row>
       <v-col
         v-for="usuario in usuarios"
@@ -36,54 +41,12 @@
         </v-card>
       </v-col>
     </v-row>
-
-    <!-- Diálogo de formulario -->
-    <v-dialog v-model="dialogo" max-width="600">
-      <v-card>
-        <v-card-title>
-          <span class="text-h6">{{ usuarioEditando ? 'Editar Usuario' : 'Nuevo Usuario' }}</span>
-        </v-card-title>
-        <v-card-text>
-          <v-text-field label="Nombre" v-model="form.nombre" />
-          <v-text-field label="Apellido" v-model="form.apellido" />
-          <v-text-field label="Username" v-model="form.username" />
-          <v-text-field label="Password" v-model="form.password" type="password" />
-          <v-text-field label="Documento ID" v-model="form.documentoId" />
-          <v-text-field label="Correo" v-model="form.correo" type="email" />
-          <v-select
-            :items="roles"
-            item-title="nombre"
-            item-value="id"
-            label="Rol"
-            v-model="form.rolId"
-          />
-          <!-- Foto -->
-          <v-file-input
-            label="Foto"
-            prepend-icon="mdi-camera"
-            accept="image/*"
-            @change="handleFotoSeleccionada"
-          />
-          <v-avatar size="80" class="mt-3" v-if="form.fotoPreview">
-            <v-img :src="form.fotoPreview" />
-          </v-avatar>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text color="blue darken-1" @click="cerrarDialogo">Cancelar</v-btn>
-          <v-btn text color="blue darken-1" @click="guardarUsuario">Guardar</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
   </v-container>
 </template>
-<script lang="ts" setup>
-import { ref, watch, onMounted } from 'vue'
 
-interface Rol {
-  id: number
-  nombre: string
-}
+<script lang="ts" setup>
+import { ref, onMounted, watch } from 'vue'
+import AgregarUsuario from '@/components/AgregarUsuario.vue'
 
 interface Usuario {
   id: number
@@ -97,6 +60,11 @@ interface Usuario {
   fotoPreview?: string
 }
 
+interface Rol {
+  id: number
+  nombre: string
+}
+
 const roles = ref<Rol[]>([
   { id: 1, nombre: 'Administrador' },
   { id: 2, nombre: 'Programador Frontend' },
@@ -108,107 +76,22 @@ const roles = ref<Rol[]>([
 
 const usuarios = ref<Usuario[]>([])
 
-// --- Cargar usuarios desde localStorage al montar ---
 onMounted(() => {
   const datosGuardados = localStorage.getItem('usuarios')
   if (datosGuardados) {
     usuarios.value = JSON.parse(datosGuardados)
-  } else {
-    // Si no hay en localStorage, carga los usuarios iniciales
-    usuarios.value = [
-      {
-        id: 1,
-        nombre: 'Carlos',
-        apellido: 'Gómez',
-        username: 'cgomez',
-        password: '123456',
-        documentoId: '12345678',
-        correo: 'carlos@example.com',
-        rolId: 1,
-        fotoPreview: ''
-      },
-      {
-        id: 2,
-        nombre: 'Ana',
-        apellido: 'Ruiz',
-        username: 'aruiz',
-        password: 'abcdef',
-        documentoId: '87654321',
-        correo: 'ana@example.com',
-        rolId: 2,
-        fotoPreview: ''
-      }
-    ]
   }
 })
 
-// --- Guardar usuarios en localStorage cada vez que cambian ---
-watch(
-  usuarios,
-  (nuevosUsuarios) => {
-    localStorage.setItem('usuarios', JSON.stringify(nuevosUsuarios))
-  },
-  { deep: true }
-)
+watch(usuarios, nuevos => {
+  localStorage.setItem('usuarios', JSON.stringify(nuevos))
+}, { deep: true })
 
 const dialogo = ref(false)
 const usuarioEditando = ref<Usuario | null>(null)
 
-const form = ref({
-  nombre: '',
-  apellido: '',
-  username: '',
-  password: '',
-  documentoId: '',
-  correo: '',
-  rolId: 0,
-  fotoPreview: ''
-})
-
-const abrirDialogo = () => {
-  usuarioEditando.value = null
-  form.value = {
-    nombre: '',
-    apellido: '',
-    username: '',
-    password: '',
-    documentoId: '',
-    correo: '',
-    rolId: 0,
-    fotoPreview: ''
-  }
-  dialogo.value = true
-}
-
-const cerrarDialogo = () => {
-  dialogo.value = false
-}
-
-const guardarUsuario = () => {
-  if (usuarioEditando.value) {
-    const index = usuarios.value.findIndex(u => u.id === usuarioEditando.value?.id)
-    if (index !== -1) {
-      usuarios.value[index] = { ...usuarioEditando.value, ...form.value }
-    }
-  } else {
-    const nuevoId = usuarios.value.length ? Math.max(...usuarios.value.map(u => u.id)) + 1 : 1
-    usuarios.value.push({ id: nuevoId, ...form.value })
-  }
-  cerrarDialogo()
-}
-
 const editarUsuario = (usuario: Usuario) => {
   usuarioEditando.value = { ...usuario }
-  form.value = {
-    nombre: usuario.nombre,
-    apellido: usuario.apellido,
-    username: usuario.username,
-    password: usuario.password,
-    documentoId: usuario.documentoId,
-    correo: usuario.correo,
-    rolId: usuario.rolId,
-    fotoPreview: usuario.fotoPreview || ''
-  }
   dialogo.value = true
 }
 
@@ -221,15 +104,16 @@ const obtenerNombreRol = (rolId: number) => {
   return rol ? rol.nombre : 'Sin rol'
 }
 
-// Manejo de imagen local
-const handleFotoSeleccionada = (e: Event) => {
-  const file = (e.target as HTMLInputElement)?.files?.[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = () => {
-      form.value.fotoPreview = reader.result as string
+const guardarUsuario = (nuevoUsuario: Usuario) => {
+  if (usuarioEditando.value) {
+    const index = usuarios.value.findIndex(u => u.id === usuarioEditando.value?.id)
+    if (index !== -1) {
+      usuarios.value[index] = { ...nuevoUsuario, id: usuarioEditando.value.id }
     }
-    reader.readAsDataURL(file)
+  } else {
+    const nuevoId = usuarios.value.length ? Math.max(...usuarios.value.map(u => u.id)) + 1 : 1
+    usuarios.value.push({ ...nuevoUsuario, id: nuevoId })
   }
+  dialogo.value = false
 }
 </script>

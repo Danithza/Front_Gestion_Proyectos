@@ -87,7 +87,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import ProyectoForm from '@/components/ProyectoForm.vue'
+import ProyectoForm from '@/components/AgregarProyecto.vue'
 
 interface Tarea {
   nombre: string
