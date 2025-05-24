@@ -1,63 +1,91 @@
 <template>
   <v-navigation-drawer
-    v-model="drawer"
-    app
-    temporary
-    color="blue-darken-3"
+    permanent
+    color="primary"
     dark
+    width="72"
+    class="elevation-2 custom-sidebar"
   >
-    <v-list nav dense>
-      <!-- menu group -->
-      <template
-        v-for="group in menuGroups"
-        :key="group.title"
+    <v-list dense nav class="pa-0">
+      <v-tooltip
+        v-for="item in allItems"
+        :key="item.title"
+        location="right"
       >
-        <v-subheader>{{ group.title }}</v-subheader>
-        <template
-          v-for="item in group.items"
-          :key="item.title"
-        >
+        <template #activator="{ props }">
           <v-list-item
+            v-bind="props"
             :to="item.to"
             link
-            active-class="bg-blue-darken-1"
+            active-class="active-item"
+            class="icon-item"
           >
-            <template v-slot:prepend>
-              <v-icon>{{ item.icon }}</v-icon>
-            </template>
-            <v-list-item-title>{{ item.title }}</v-list-item-title>
+            <v-icon class="icon-style">{{ item.icon }}</v-icon>
           </v-list-item>
         </template>
-      </template>
+        <span>{{ item.title }}</span>
+      </v-tooltip>
     </v-list>
   </v-navigation-drawer>
 </template>
 
-<script lang="ts" setup>
-import { inject } from 'vue'
+<script setup lang="ts">
+interface NavItem {
+  title: string
+  icon: string
+  to: string
+}
 
-const drawer = inject('drawer') as any
-
-const mainItems = [
+const allItems: NavItem[] = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/dashboard' },
   { title: 'Proyectos', icon: 'mdi-folder-outline', to: '/proyectos' },
-]
-
-const gestionItems = [
   { title: 'Tareas', icon: 'mdi-format-list-checkbox', to: '/tareas' },
   { title: 'Calendario', icon: 'mdi-calendar-month', to: '/calendario' },
   { title: 'Reportes', icon: 'mdi-chart-box-outline', to: '/reportes' },
   { title: 'Equipos', icon: 'mdi-account-group-outline', to: '/equipos' },
-]
-
-const configItems = [
   { title: 'Roles', icon: 'mdi-account-cog-outline', to: '/roles' },
   { title: 'Usuarios', icon: 'mdi-account', to: '/usuarios' },
 ]
-
-const menuGroups = [
-  { title: 'Principal', items: mainItems },
-  { title: 'Gestion', items: gestionItems },
-  { title: 'Configuración', items: configItems },
-]
 </script>
+
+<style scoped>
+.v-navigation-drawer {
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.custom-sidebar {
+  margin-top: 64px; /* Ajusta según la altura de tu navbar */
+  height: calc(100vh - 64px);
+  position: fixed;
+  z-index: 1001;
+}
+
+/* Contenedor del item con icono alineado más abajo */
+.icon-item {
+  min-height: 72px;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: flex-end !important;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.icon-style {
+  font-size: 28px;
+  color: white;
+  margin-left: 12px;
+  transition: color 0.3s;
+}
+
+.icon-item:hover .icon-style {
+  color: #bbdefb;
+}
+
+.active-item {
+  background-color: rgba(187, 222, 251, 0.15) !important;
+  border-left: 4px solid #bbdefb !important;
+  color: #bbdefb !important;
+}
+</style>

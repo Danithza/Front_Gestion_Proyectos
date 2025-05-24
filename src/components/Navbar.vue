@@ -1,7 +1,12 @@
 <template>
-  <v-app-bar app color="blue darken-2" dark elevate-on-scroll>
-    <v-app-bar-nav-icon @click="toggleDrawer" class="me-4" />
-
+  <v-app-bar
+    color="blue-darken-2"
+    dark
+    elevate-on-scroll
+    height="64"
+    flat
+    class="navbar-completo"
+  >
     <v-btn text class="d-flex align-center" to="/">
       <v-img
         src="@/assets/Logo.png"
@@ -40,16 +45,21 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, inject } from 'vue'
+import { ref } from 'vue'
 import Notificacion from '@/components/Notificacion.vue'
 import Configuracion from '@/components/Configuracion.vue'
 import PerfilMenu from '@/components/PerfilMenu.vue'
 
-const toggleDrawer = inject<() => void>('toggleDrawer')!
 const search = ref('')
 </script>
 
 <style scoped>
+.navbar-completo {
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 10;
+}
+
 .search-field {
   background-color: rgba(255, 255, 255, 0.15);
   max-width: 300px;
