@@ -56,8 +56,8 @@ const vuetify = createVuetify({
         colors: {
           background: '#FFFFFF',
           surface: '#FFFFFF',
-          primary: '#6200EE',
-          secondary: '#03DAC6',
+          primary: '#1976D2', // Azul
+          secondary: '#03A9F4', // Azul claro
           error: '#B00020',
         },
       },
@@ -66,14 +66,15 @@ const vuetify = createVuetify({
         colors: {
           background: '#121212',
           surface: '#1E1E1E',
-          primary: '#BB86FC',
-          secondary: '#03DAC6',
+          primary: '#2196F3', // Azul más claro para modo oscuro
+          secondary: '#03A9F4',
           error: '#CF6679',
         },
       },
     },
   },
 })
+
 
 const app = createApp(App)
 app.use(createPinia())
