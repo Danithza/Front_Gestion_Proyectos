@@ -1,188 +1,144 @@
 <template>
   <v-container>
-    <h2 class="text-h5 font-weight-bold mb-6 text-blue-darken-2">Gestión de Roles</h2>
-
-    <v-row dense>
-      <v-col
-        v-for="rol in roles"
-        :key="rol.id"
-        cols="12"
-        sm="6"
-        md="4"
-        lg="3"
-        class="d-flex"
-      >
-        <v-card
-          :color="rol.activo ? 'blue-lighten-5' : 'grey-lighten-3'"
-          class="flex-grow-1 d-flex flex-column justify-space-between"
-          height="280"
-          elevation="2"
-        >
-          <div>
-            <v-card-title class="text-blue-darken-2 text-h6">
-              {{ rol.nombre }}
-            </v-card-title>
-
-            <v-card-subtitle :class="rol.activo ? 'text-green' : 'text-red'">
-              {{ rol.activo ? 'Activo' : 'Inactivo' }}
-            </v-card-subtitle>
-
-            <v-card-text class="py-2 text-blue-grey-darken-2">
-              {{ rol.descripcion || 'Sin descripción' }}
-            </v-card-text>
-
-            <v-card-text class="pt-0">
-              <strong class="text-blue-darken-3">Permisos:</strong>
-              <v-chip-group column class="mt-2 overflow-y-auto" style="max-height: 90px;">
-                <v-chip
-                  v-for="permiso in rol.permisos"
-                  :key="permiso"
-                  size="small"
-                  color="blue-lighten-2"
-                  text-color="white"
-                  class="ma-1"
-                  variant="elevated"
-                >
-                  {{ permiso }}
-                </v-chip>
-              </v-chip-group>
-            </v-card-text>
-          </div>
-
-          <v-card-actions class="justify-end">
-            <v-btn
-              icon
-              variant="text"
-              color="blue-darken-1"
-              @click="editarRol(rol)"
-              aria-label="Editar rol"
-            >
-              <v-icon>mdi-pencil</v-icon>
-            </v-btn>
-
-            <v-btn
-              icon
-              variant="text"
-              color="blue-darken-3"
-              @click="eliminarRol(rol.id)"
-              aria-label="Eliminar rol"
-            >
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
-
-            <v-btn
-              icon
-              variant="text"
-              :color="rol.activo ? 'green' : 'red'"
-              @click="toggleActivo(rol)"
-              :aria-label="rol.activo ? 'Desactivar rol' : 'Activar rol'"
-            >
-              <v-icon>{{ rol.activo ? 'mdi-eye' : 'mdi-eye-off' }}</v-icon>
-            </v-btn>
-          </v-card-actions>
-        </v-card>
+    <v-row justify="space-between" align="center" class="mb-4">
+      <v-col cols="6">
+        <h2 class="text-h5 font-weight-bold">Role Management</h2>
+      </v-col>
+      <v-col cols="6" class="text-right">
+        <v-btn color="primary" @click="openCreateModal">Create Role</v-btn>
+        <v-btn color="secondary" @click="fetchRoles" class="ml-2">Refresh</v-btn>
       </v-col>
     </v-row>
 
-    <v-btn
-      color="blue-darken-2"
-      class="mt-6"
-      prepend-icon="mdi-plus"
-      @click="agregarRol"
-      variant="elevated"
-    >
-      Agregar Rol
-    </v-btn>
+    <!-- Role Table -->
+    <v-data-table :headers="headers" :items="roles" item-value="id" class="elevation-1">
+      <template #item.permissions="{ item }">
+        <span>{{ item.permissions }}</span>
+      </template>
+      <template #item.actions="{ item }">
+        <v-btn icon color="primary" @click="editRole(item)">
+          <v-icon>mdi-pencil</v-icon>
+        </v-btn>
+        <v-btn icon color="red" @click="deleteRole(item.id)">
+          <v-icon>mdi-delete</v-icon>
+        </v-btn>
+      </template>
+    </v-data-table>
 
-    <!-- Diálogo con Formulario -->
-    <v-dialog v-model="mostrarFormulario" max-width="600px">
-      <FormularioRol
-        :rol="rolSeleccionado"
-        :modo-edicion="modoEdicion"
-        @guardar="guardarRol"
-        @cancelar="mostrarFormulario = false"
-      />
+    <!-- Modal for Create/Edit Role -->
+    <v-dialog v-model="dialog" max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="text-h6">{{ editingRole ? 'Edit Role' : 'Create Role' }}</span>
+        </v-card-title>
+        <v-card-text>
+          <v-form ref="form">
+            <v-text-field v-model="roleForm.title" label="Title" :rules="[v => !!v || 'Title is required']" />
+            <v-textarea v-model="roleForm.description" label="Description"
+              :rules="[v => !!v || 'Description is required']" />
+            <v-textarea v-model="roleForm.permissions" label="Permissions (comma-separated)"
+              :rules="[v => !!v || 'Permissions are required']" />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="closeModal">Cancel</v-btn>
+          <v-btn color="primary" @click="saveRole">Save</v-btn>
+        </v-card-actions>
+      </v-card>
     </v-dialog>
   </v-container>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import FormularioRol from '@/components/FormularioRol.vue'
+<script lang="ts" setup>
+import { ref, onMounted } from 'vue';
+import service from '@/services/baseService';
+import CONFIG from '@/config/app';
 
-interface Rol {
-  id: number
-  nombre: string
-  descripcion: string
-  permisos: string[]
-  activo: boolean
+interface Role {
+  id: number;
+  title: string;
+  description: string;
+  permissions: string;
 }
 
-const STORAGE_KEY = 'roles_app'
+const headers = [
+  { text: 'Title', value: 'title' },
+  { text: 'Description', value: 'description' },
+  { text: 'Permissions', value: 'permissions' },
+  { text: 'Actions', value: 'actions', sortable: false },
+];
 
-const roles = ref<Rol[]>([])
-const rolSeleccionado = ref<Rol>({
+const roles = ref<Role[]>([]);
+const dialog = ref(false);
+const editingRole = ref<Role | null>(null);
+const roleForm = ref<Role>({
   id: 0,
-  nombre: '',
-  descripcion: '',
-  permisos: [],
-  activo: true,
-})
-const modoEdicion = ref(false)
-const mostrarFormulario = ref(false)
+  title: '',
+  description: '',
+  permissions: '',
+});
+
+const fetchRoles = async () => {
+  try {
+    const response = await service.index<Role[]>(CONFIG.api.roles);
+    roles.value = response;
+  } catch (error) {
+    console.error('Error fetching roles:', error);
+  }
+};
+
+const openCreateModal = () => {
+  editingRole.value = null;
+  roleForm.value = {
+    id: 0,
+    title: '',
+    description: '',
+    permissions: '',
+  };
+  dialog.value = true;
+};
+
+const editRole = (role: Role) => {
+  editingRole.value = role;
+  roleForm.value = { ...role };
+  dialog.value = true;
+};
+
+const saveRole = async () => {
+  try {
+    if (editingRole.value) {
+      // Update role
+      await service.update(CONFIG.api.roles, editingRole.value.id.toString(), roleForm.value);
+      const index = roles.value.findIndex((r) => r.id === editingRole.value?.id);
+      if (index !== -1) {
+        roles.value[index] = { ...roleForm.value };
+      }
+    } else {
+      // Create role
+      const response = await service.store<Role>(CONFIG.api.roles, roleForm.value);
+      roles.value.push(response);
+    }
+    dialog.value = false;
+  } catch (error) {
+    console.error('Error saving role:', error);
+  }
+};
+
+const deleteRole = async (id: number) => {
+  try {
+    await service.delete(CONFIG.api.roles, id.toString());
+    roles.value = roles.value.filter((r) => r.id !== id);
+  } catch (error) {
+    console.error('Error deleting role:', error);
+  }
+};
+
+const closeModal = () => {
+  dialog.value = false;
+};
 
 onMounted(() => {
-  const saved = localStorage.getItem(STORAGE_KEY)
-  roles.value = saved ? JSON.parse(saved) : []
-})
-
-watch(roles, (nuevosRoles) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevosRoles))
-}, { deep: true })
-
-function agregarRol() {
-  rolSeleccionado.value = {
-    id: 0,
-    nombre: '',
-    descripcion: '',
-    permisos: [],
-    activo: true,
-  }
-  modoEdicion.value = false
-  mostrarFormulario.value = true
-}
-
-function editarRol(rol: Rol) {
-  rolSeleccionado.value = { ...rol }
-  modoEdicion.value = true
-  mostrarFormulario.value = true
-}
-
-function guardarRol(rol: Rol) {
-  if (modoEdicion.value) {
-    const idx = roles.value.findIndex(r => r.id === rol.id)
-    if (idx !== -1) roles.value[idx] = { ...rol }
-  } else {
-    const nuevoId = roles.value.length ? Math.max(...roles.value.map(r => r.id)) + 1 : 1
-    roles.value.push({ ...rol, id: nuevoId })
-  }
-  mostrarFormulario.value = false
-}
-
-function eliminarRol(id: number) {
-  roles.value = roles.value.filter(r => r.id !== id)
-}
-
-function toggleActivo(rol: Rol) {
-  rol.activo = !rol.activo
-}
+  fetchRoles();
+});
 </script>
-
-<style scoped>
-.text-green {
-  color: #2e7d32;
-}
-.text-red {
-  color: #c62828;
-}
-</style>
