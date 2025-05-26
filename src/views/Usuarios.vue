@@ -12,8 +12,14 @@
 
     <!-- User Table -->
     <v-data-table :headers="headers" :items="users" item-value="id" class="elevation-1">
+      <template #item.typeDocument="{ item }">
+        <span>{{ item.typeDocument?.title ?? '' }}</span>
+      </template>
+      <template #item.document="{ item }">
+        <span>{{ item.document }}</span>
+      </template>
       <template #item.roles="{ item }">
-        <span>{{item.roles.map(role => role.title).join(', ')}}</span>
+        <span>{{(item.roles??[]).map(role => role.title).join(', ')}}</span>
       </template>
       <template #item.city="{ item }">
         <span>{{ item.city?.title ?? '' }}</span>
@@ -40,9 +46,25 @@
               :rules="[v => !!v || 'First name is required']" />
             <v-text-field v-model="userForm.lastName" label="Last Name"
               :rules="[v => !!v || 'Last name is required']" />
+            <v-text-field v-model="userForm.telephone" label="Telephone" :rules="[v => !!v || 'Telephone is required']" />
             <v-text-field v-model="userForm.email" label="Email" :rules="[v => !!v || 'Email is required']" />
-            <v-select v-model="userForm.roleIds" :items="roles" item-text="name" item-value="id" label="Roles" multiple
+              <v-text-field v-model="userForm.password" label="Password" :rules="[v => !!v || 'Password is required']" />
+            <v-select v-model="userForm.roleIds" :items="roles" item-text="title" item-value="id" label="Roles" multiple
               :rules="[v => v && v.length > 0 || 'At least one role is required']" />
+              <v-select
+              v-model="userForm.typeDocumentId"
+              :items="typeDocuments"
+              item-text="title"
+              item-value="id"
+              label="Document Type"
+              :rules="[v => !!v || 'Document type is required']"
+            />
+            <v-text-field
+              v-model="userForm.document"
+              label="Document"
+              :rules="[v => !!v || 'Document is required']"
+              type="number"
+            />
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -60,14 +82,24 @@ import { ref, onMounted } from 'vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
 
+interface TypeDocument {
+  id: number;
+  title: string;
+}
+
 interface User {
   id: number;
   firstName: string;
   lastName: string;
+  telephone: string;
   email: string;
-  city?: City; // Optional city field
-  roles: Role[]; // Include roles as an array of Role objects
-  roleIds: number[]; // Used for selecting roles in the form
+  password: string;
+  document: number;
+  typeDocumentId: number;
+  typeDocument?: TypeDocument;
+  city?: City;
+  roles: Role[];
+  roleIds: number[];
 }
 
 interface Role {
@@ -84,6 +116,8 @@ const headers = [
   { text: 'First Name', value: 'firstName' },
   { text: 'Last Name', value: 'lastName' },
   { text: 'Email', value: 'email' },
+  { text: 'Document Type', value: 'typeDocument' },
+  { text: 'Document', value: 'document' },
   { text: 'Roles', value: 'roles' },
   { text: 'City', value: 'city' },
   { text: 'Actions', value: 'actions', sortable: false },
@@ -91,28 +125,34 @@ const headers = [
 
 const users = ref<User[]>([]);
 const roles = ref<Role[]>([]);
+const typeDocuments = ref<TypeDocument[]>([]);
 const dialog = ref(false);
 const editingUser = ref<User | null>(null);
 const userForm = ref<User>({
   id: 0,
   firstName: '',
   lastName: '',
+  telephone: '',
   email: '',
+  password: '',
+  document: 0,
+  typeDocumentId: 0,
   roles: [],
-  roleIds: [], // Initialize as an empty array
+  roleIds: [],
 });
 
 const fetchData = () => {
   fetchUsers();
   fetchRoles();
+  fetchTypeDocuments();
 }
 
 const fetchUsers = async () => {
   try {
-    const response = await service.index<User[]>(CONFIG.api.users, { with: 'roles,city' });
+    const response = await service.index<User[]>(CONFIG.api.users, { with: 'roles,city,typeDocument' });
     users.value = response.map(user => ({
       ...user,
-      roleIds: (user.roles || []).map(role => role.id), // Map roles to roleIds for the form
+      roleIds: (user.roles || []).map(role => role.id),
     }));
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -128,6 +168,15 @@ const fetchRoles = async () => {
   }
 };
 
+const fetchTypeDocuments = async () => {
+  try {
+    const response = await service.index<TypeDocument[]>(CONFIG.api.typesDocuments);
+    typeDocuments.value = response;
+  } catch (error) {
+    console.error('Error fetching type documents:', error);
+  }
+};
+
 const openCreateModal = () => {
   editingUser.value = null;
   userForm.value = {
@@ -135,6 +184,8 @@ const openCreateModal = () => {
     firstName: '',
     lastName: '',
     email: '',
+    document: 0,
+    typeDocumentId: 0,
     roles: [],
     roleIds: [],
   };
@@ -143,7 +194,12 @@ const openCreateModal = () => {
 
 const editUser = (user: User) => {
   editingUser.value = user;
-  userForm.value = { ...user, roleIds: user.roleIds || [] };
+  userForm.value = {
+    ...user,
+    roleIds: user.roleIds || [],
+    document: user.document,
+    typeDocumentId: user.typeDocumentId,
+  };
   dialog.value = true;
 };
 
@@ -151,23 +207,21 @@ const saveUser = async () => {
   try {
     const payload = {
       ...userForm.value,
-      roles: userForm.value.roleIds, // Send roles as an array of IDs
+      roles: userForm.value.roleIds,
     };
 
     if (editingUser.value) {
-      // Update user
       await service.update(CONFIG.api.users, editingUser.value.id.toString(), payload);
       const index = users.value.findIndex((u) => u.id === editingUser.value?.id);
       if (index !== -1) {
         users.value[index] = { ...userForm.value, roles: editingUser.value.roles };
       }
     } else {
-      // Create user
       const response = await service.store<User>(CONFIG.api.users, payload);
       users.value.push(response);
     }
     dialog.value = false;
-    fetchData(); // Refresh the user list
+    fetchData();
   } catch (error) {
     console.error('Error saving user:', error);
   }
@@ -189,5 +243,6 @@ const closeModal = () => {
 onMounted(() => {
   fetchUsers();
   fetchRoles();
+  fetchTypeDocuments();
 });
 </script>
