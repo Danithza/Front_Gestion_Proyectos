@@ -2,118 +2,192 @@
   <v-container>
     <v-row justify="space-between" align="center" class="mb-4">
       <v-col cols="6">
-        <h2 class="text-h5 font-weight-bold">Gestión de Usuarios</h2>
+        <h2 class="text-h5 font-weight-bold">User Management</h2>
       </v-col>
       <v-col cols="6" class="text-right">
-        <!-- SOLO este botón que está dentro del componente -->
-        <AgregarUsuario
-          v-model:dialogo="dialogo"
-          :usuario-editando="usuarioEditando"
-          @guardar="guardarUsuario"
-        />
+        <v-btn color="primary" @click="openCreateModal">Create User</v-btn>
+        <v-btn color="secondary" @click="fetchData" class="ml-2">Refresh</v-btn>
       </v-col>
     </v-row>
 
-    <!-- Tarjetas de usuarios -->
-    <v-row>
-      <v-col
-        v-for="usuario in usuarios"
-        :key="usuario.id"
-        cols="12"
-        sm="6"
-        md="4"
-        lg="3"
-      >
-        <v-card class="pa-3">
-          <v-avatar size="80" class="mb-3 mx-auto">
-            <v-img :src="usuario.fotoPreview || 'https://via.placeholder.com/80'" />
-          </v-avatar>
-          <div class="text-center font-weight-bold text-subtitle-1">
-            {{ usuario.nombre }} {{ usuario.apellido }}
-          </div>
-          <div class="text-center text-caption mb-2">
-            {{ usuario.username }} | {{ obtenerNombreRol(usuario.rolId) }}
-          </div>
-          <div class="d-flex justify-center">
-            <v-icon class="me-2" color="primary" @click="editarUsuario(usuario)">mdi-pencil</v-icon>
-            <v-icon color="red" @click="eliminarUsuario(usuario.id)">mdi-delete</v-icon>
-          </div>
-        </v-card>
-      </v-col>
-    </v-row>
+    <!-- User Table -->
+    <v-data-table :headers="headers" :items="users" item-value="id" class="elevation-1">
+      <template #item.roles="{ item }">
+        <span>{{item.roles.map(role => role.title).join(', ')}}</span>
+      </template>
+      <template #item.city="{ item }">
+        <span>{{ item.city?.title ?? '' }}</span>
+      </template>
+      <template #item.actions="{ item }">
+        <v-btn icon color="primary" @click="editUser(item)">
+          <v-icon>mdi-pencil</v-icon>
+        </v-btn>
+        <v-btn icon color="red" @click="deleteUser(item.id)">
+          <v-icon>mdi-delete</v-icon>
+        </v-btn>
+      </template>
+    </v-data-table>
+
+    <!-- Modal for Create/Edit User -->
+    <v-dialog v-model="dialog" max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="text-h6">{{ editingUser ? 'Edit User' : 'Create User' }}</span>
+        </v-card-title>
+        <v-card-text>
+          <v-form ref="form">
+            <v-text-field v-model="userForm.firstName" label="First Name"
+              :rules="[v => !!v || 'First name is required']" />
+            <v-text-field v-model="userForm.lastName" label="Last Name"
+              :rules="[v => !!v || 'Last name is required']" />
+            <v-text-field v-model="userForm.email" label="Email" :rules="[v => !!v || 'Email is required']" />
+            <v-select v-model="userForm.roleIds" :items="roles" item-text="name" item-value="id" label="Roles" multiple
+              :rules="[v => v && v.length > 0 || 'At least one role is required']" />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="closeModal">Cancel</v-btn>
+          <v-btn color="primary" @click="saveUser">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue'
-import AgregarUsuario from '@/components/AgregarUsuario.vue'
+import { ref, onMounted } from 'vue';
+import service from '@/services/baseService';
+import CONFIG from '@/config/app';
 
-interface Usuario {
-  id: number
-  nombre: string
-  apellido: string
-  username: string
-  password: string
-  documentoId: string
-  correo: string
-  rolId: number
-  fotoPreview?: string
+interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  city?: City; // Optional city field
+  roles: Role[]; // Include roles as an array of Role objects
+  roleIds: number[]; // Used for selecting roles in the form
 }
 
-interface Rol {
-  id: number
-  nombre: string
+interface Role {
+  id: number;
+  title: string;
 }
 
-const roles = ref<Rol[]>([
-  { id: 1, nombre: 'Administrador' },
-  { id: 2, nombre: 'Programador Frontend' },
-  { id: 3, nombre: 'Programador Backend' },
-  { id: 4, nombre: 'Vendedor' },
-  { id: 5, nombre: 'Soporte' },
-  { id: 6, nombre: 'Cliente' }
-])
+interface City {
+  id: number;
+  title: string;
+}
 
-const usuarios = ref<Usuario[]>([])
+const headers = [
+  { text: 'First Name', value: 'firstName' },
+  { text: 'Last Name', value: 'lastName' },
+  { text: 'Email', value: 'email' },
+  { text: 'Roles', value: 'roles' },
+  { text: 'City', value: 'city' },
+  { text: 'Actions', value: 'actions', sortable: false },
+];
+
+const users = ref<User[]>([]);
+const roles = ref<Role[]>([]);
+const dialog = ref(false);
+const editingUser = ref<User | null>(null);
+const userForm = ref<User>({
+  id: 0,
+  firstName: '',
+  lastName: '',
+  email: '',
+  roles: [],
+  roleIds: [], // Initialize as an empty array
+});
+
+const fetchData = () => {
+  fetchUsers();
+  fetchRoles();
+}
+
+const fetchUsers = async () => {
+  try {
+    const response = await service.index<User[]>(CONFIG.api.users, { with: 'roles,city' });
+    users.value = response.map(user => ({
+      ...user,
+      roleIds: (user.roles || []).map(role => role.id), // Map roles to roleIds for the form
+    }));
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+};
+
+const fetchRoles = async () => {
+  try {
+    const response = await service.index<Role[]>(CONFIG.api.roles);
+    roles.value = response;
+  } catch (error) {
+    console.error('Error fetching roles:', error);
+  }
+};
+
+const openCreateModal = () => {
+  editingUser.value = null;
+  userForm.value = {
+    id: 0,
+    firstName: '',
+    lastName: '',
+    email: '',
+    roles: [],
+    roleIds: [],
+  };
+  dialog.value = true;
+};
+
+const editUser = (user: User) => {
+  editingUser.value = user;
+  userForm.value = { ...user, roleIds: user.roleIds || [] };
+  dialog.value = true;
+};
+
+const saveUser = async () => {
+  try {
+    const payload = {
+      ...userForm.value,
+      roles: userForm.value.roleIds, // Send roles as an array of IDs
+    };
+
+    if (editingUser.value) {
+      // Update user
+      await service.update(CONFIG.api.users, editingUser.value.id.toString(), payload);
+      const index = users.value.findIndex((u) => u.id === editingUser.value?.id);
+      if (index !== -1) {
+        users.value[index] = { ...userForm.value, roles: editingUser.value.roles };
+      }
+    } else {
+      // Create user
+      const response = await service.store<User>(CONFIG.api.users, payload);
+      users.value.push(response);
+    }
+    dialog.value = false;
+    fetchData(); // Refresh the user list
+  } catch (error) {
+    console.error('Error saving user:', error);
+  }
+};
+
+const deleteUser = async (id: number) => {
+  try {
+    await service.delete(CONFIG.api.users, id.toString());
+    users.value = users.value.filter((u) => u.id !== id);
+  } catch (error) {
+    console.error('Error deleting user:', error);
+  }
+};
+
+const closeModal = () => {
+  dialog.value = false;
+};
 
 onMounted(() => {
-  const datosGuardados = localStorage.getItem('usuarios')
-  if (datosGuardados) {
-    usuarios.value = JSON.parse(datosGuardados)
-  }
-})
-
-watch(usuarios, nuevos => {
-  localStorage.setItem('usuarios', JSON.stringify(nuevos))
-}, { deep: true })
-
-const dialogo = ref(false)
-const usuarioEditando = ref<Usuario | null>(null)
-
-const editarUsuario = (usuario: Usuario) => {
-  usuarioEditando.value = { ...usuario }
-  dialogo.value = true
-}
-
-const eliminarUsuario = (id: number) => {
-  usuarios.value = usuarios.value.filter(u => u.id !== id)
-}
-
-const obtenerNombreRol = (rolId: number) => {
-  const rol = roles.value.find(r => r.id === rolId)
-  return rol ? rol.nombre : 'Sin rol'
-}
-
-const guardarUsuario = (nuevoUsuario: Usuario) => {
-  if (usuarioEditando.value) {
-    const index = usuarios.value.findIndex(u => u.id === usuarioEditando.value?.id)
-    if (index !== -1) {
-      usuarios.value[index] = { ...nuevoUsuario, id: usuarioEditando.value.id }
-    }
-  } else {
-    const nuevoId = usuarios.value.length ? Math.max(...usuarios.value.map(u => u.id)) + 1 : 1
-    usuarios.value.push({ ...nuevoUsuario, id: nuevoId })
-  }
-  dialogo.value = false
-}
+  fetchUsers();
+  fetchRoles();
+});
 </script>

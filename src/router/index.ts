@@ -17,16 +17,20 @@ import Calendario from '@/views/Calendario.vue'
 import Roles from '@/views/Roles.vue'
 import Usuarios from '@/views/Usuarios.vue'
 import Equipos from '@/views/Equipos.vue'
+import Cities from '@/views/Cities.vue'
+import DocumentTypes from '@/views/DocumentTypes.vue'
+import Statuses from '@/views/Statuses.vue'
+import Priorities from '@/views/Priorities.vue'
 const routes = [
   {
     path: '/auth',
     component: authLayout,
     children: [
-    {
-    path: '/',
-    name: 'auth.inicio',
-    component: Inicio,
-    },
+      {
+        path: '/',
+        name: 'auth.inicio',
+        component: Inicio,
+      },
       {
         path: '/login',
         name: 'auth.login',
@@ -44,10 +48,40 @@ const routes = [
       }
     ],
   },
-    {
+  {
     path: '/',
     component: mainLayout,
     children: [
+      {
+        path: '/roles',
+        name: 'main.roles',
+        component: Roles
+      },
+      {
+        path: '/usuarios',
+        name: 'main.usuarios',
+        component: Usuarios
+      },
+      {
+        path: '/cities',
+        name: 'main.cities',
+        component: Cities
+      },
+      {
+        path: '/document-types',
+        name: 'main.documentTypes',
+        component: DocumentTypes
+      },
+      {
+        path: '/statuses',
+        name: 'main.statuses',
+        component: Statuses
+      },
+      {
+        path: '/priorities',
+        name: 'main.priorities',
+        component: Priorities
+      },
       {
         path: 'dashboard',
         name: 'main.dashboard',
@@ -64,16 +98,6 @@ const routes = [
         component: Tareas
       },
       {
-        path: '/roles',
-        name: 'main.roles',
-        component: Roles
-      },
-      {
-        path: '/usuarios',
-        name: 'main.usuarios',
-        component: Usuarios
-      },
-      {
         path: '/calendario',
         name: 'main.calendario',
         component: Calendario
@@ -83,7 +107,7 @@ const routes = [
         name: 'main.reportes',
         component: Reportes
       },
-       {
+      {
         path: '/equipos',
         name: 'main.equipos',
         component: Equipos
