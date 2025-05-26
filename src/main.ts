@@ -13,6 +13,8 @@ import * as directives from 'vuetify/directives'
 import { VCalendar } from 'vuetify/labs/components'
 
 import { createI18n } from 'vue-i18n'
+import { useAuthStore } from '@/stores/authStore'
+import service from '@/services/baseService';
 
 // ✅ Traducciones básicas
 const messages = {
@@ -82,3 +84,9 @@ app.use(router)
 app.use(i18n)
 app.use(vuetify)
 app.mount('#app')
+
+// Restore the token in the baseService
+const authStore = useAuthStore();
+if (authStore.token) {
+  service.setToken(authStore.token);
+}
