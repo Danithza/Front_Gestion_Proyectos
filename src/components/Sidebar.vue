@@ -3,7 +3,13 @@
     <v-list dense nav class="pa-0">
       <v-tooltip v-for="item in allItems" :key="item.title" location="right">
         <template #activator="{ props }">
-          <v-list-item v-bind="props" :to="item.to" link active-class="active-item" class="icon-item">
+          <v-list-item
+            v-bind="props"
+            :to="item.to"
+            link
+            active-class="active-item"
+            class="icon-item"
+          >
             <v-icon class="icon-style">{{ item.icon }}</v-icon>
           </v-list-item>
         </template>
@@ -21,18 +27,18 @@ interface NavItem {
 }
 
 const allItems: NavItem[] = [
+  { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/dashboard' },
+  { title: 'Proyectos', icon: 'mdi-folder-outline', to: '/proyectos' },
+  { title: 'Tareas', icon: 'mdi-format-list-checkbox', to: '/tareas' },
+  { title: 'Calendario', icon: 'mdi-calendar-month', to: '/calendario' },
+  { title: 'Reportes', icon: 'mdi-chart-box-outline', to: '/reportes' },
+  { title: 'Equipos', icon: 'mdi-account-group-outline', to: '/equipos' },
   { title: 'Usuarios', icon: 'mdi-account', to: '/usuarios' },
   { title: 'Roles', icon: 'mdi-account-cog-outline', to: '/roles' },
   { title: 'Cities', icon: 'mdi-home-city', to: '/cities' },
   { title: 'Document Types', icon: 'mdi-badge-account', to: '/document-types' },
   { title: 'Statuses', icon: 'mdi-list-status', to: '/statuses' },
-  { title: 'Priorities', icon: 'mdi-flag-variant', to: '/priorities' },
-  /*{ title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/dashboard' },
-  { title: 'Proyectos', icon: 'mdi-folder-outline', to: '/proyectos' },
-  { title: 'Tareas', icon: 'mdi-format-list-checkbox', to: '/tareas' },
-  { title: 'Calendario', icon: 'mdi-calendar-month', to: '/calendario' },
-  { title: 'Reportes', icon: 'mdi-chart-box-outline', to: '/reportes' },
-  { title: 'Equipos', icon: 'mdi-account-group-outline', to: '/equipos' }*/
+  { title: 'Priorities', icon: 'mdi-flag-variant', to: '/priorities' }
 ]
 </script>
 
@@ -43,28 +49,25 @@ const allItems: NavItem[] = [
 
 .custom-sidebar {
   margin-top: 64px;
-  /* Ajusta según la altura de tu navbar */
-  height: calc(100vh - 64px);
+  height: calc(100vh - 64px); /* Ajusta según la altura de tu navbar */
   position: fixed;
   z-index: 1001;
 }
 
-/* Contenedor del item con icono alineado más abajo */
 .icon-item {
   min-height: 72px;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  display: flex !important;
-  justify-content: flex-start !important;
-  align-items: flex-end !important;
+  display: flex;
+  justify-content: center; /* Centra horizontalmente */
+  align-items: center; /* Centra verticalmente */
+  padding: 0 !important;
   cursor: pointer;
   transition: background-color 0.3s;
+  width: 100%; /* Asegura que ocupe todo el ancho del sidebar */
 }
 
 .icon-style {
   font-size: 28px;
   color: white;
-  margin-left: 12px;
   transition: color 0.3s;
 }
 
