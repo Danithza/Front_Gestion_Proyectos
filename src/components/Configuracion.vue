@@ -16,6 +16,7 @@
       <v-divider />
 
       <v-list>
+        <!-- Cambiar tema oscuro -->
         <v-list-item>
           <v-list-item-title>{{ t('darkMode') }}</v-list-item-title>
           <v-list-item-action>
@@ -23,17 +24,18 @@
           </v-list-item-action>
         </v-list-item>
 
+        <!-- Seleccionar idioma -->
         <v-list-item>
           <v-list-item-title>{{ t('language') }}</v-list-item-title>
           <v-list-item-action>
             <v-select
-              v-model="locale.value"
+              v-model="selectedLanguage"
               :items="languages"
-              item-text="name"
-              item-value="code"
-              dense
+              item-title="title"
+              item-value="value"
               hide-details
-              style="max-width: 120px"
+              dense
+              style="max-width: 140px"
             />
           </v-list-item-action>
         </v-list-item>
@@ -43,23 +45,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTheme } from 'vuetify'
 
 const menu = ref(false)
 const darkMode = ref(false)
+
 const { t, locale } = useI18n()
 const theme = useTheme()
 
+// Lista de idiomas disponibles
 const languages = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
-  // agrega más idiomas si quieres
+  { value: 'es', title: 'Español' },
+  { value: 'en', title: 'English' },
+  { value: 'fr', title: 'Français' },
 ]
 
-// Cambiar tema cuando darkMode cambia
+// Idioma seleccionado (inicial desde locale)
+const selectedLanguage = ref(locale.value)
+
+// ⚙️ Cambiar tema claro/oscuro
 watch(darkMode, (val) => {
   theme.global.name.value = val ? 'dark' : 'light'
+})
+
+// 🌐 Cambiar idioma dinámicamente
+watch(selectedLanguage, (newLang) => {
+  locale.value = newLang
+  localStorage.setItem('lang', newLang)
+})
+
+// Restaurar idioma desde localStorage al cargar
+onMounted(() => {
+  const savedLang = localStorage.getItem('lang')
+  if (savedLang && savedLang !== locale.value) {
+    locale.value = savedLang
+    selectedLanguage.value = savedLang
+  }
 })
 </script>
