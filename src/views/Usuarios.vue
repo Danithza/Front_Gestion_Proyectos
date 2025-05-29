@@ -1,76 +1,158 @@
 <template>
-  <v-container>
+  <v-container class="text-body-1">
     <v-row justify="space-between" align="center" class="mb-4">
       <v-col cols="6">
-        <h2 class="text-h5 font-weight-bold">User Management</h2>
+        <h2 class="text-h5 font-weight-bold">Gestión de Usuarios</h2>
       </v-col>
       <v-col cols="6" class="text-right">
-        <v-btn color="primary" @click="openCreateModal">Create User</v-btn>
-        <v-btn color="secondary" @click="fetchData" class="ml-2">Refresh</v-btn>
+        <v-btn color="primary" @click="openCreateModal" class="text-body-1">Crear Usuario</v-btn>
       </v-col>
     </v-row>
 
     <!-- User Table -->
-    <v-data-table :headers="headers" :items="users" item-value="id" class="elevation-1">
-      <template #item.typeDocument="{ item }">
-        <span>{{ item.typeDocument?.title ?? '' }}</span>
+    <v-data-table :headers="headers" :items="users" item-value="id" class="elevation-2 text-body-2">
+      <template v-slot:item.typeDocument="{ item }">
+        <span>{{ item.typeDocument?.abbreviation ?? '' }}</span>
       </template>
-      <template #item.document="{ item }">
+      <template v-slot:item.document="{ item }">
         <span>{{ item.document }}</span>
       </template>
-      <template #item.roles="{ item }">
-        <span>{{(item.roles??[]).map(role => role.title).join(', ')}}</span>
+      <template v-slot:item.roles="{ item }">
+        <v-tooltip location="top">
+          <template #activator="{ props }">
+            <span v-bind="props" style="cursor: pointer;">
+              <v-icon small>mdi-account-group</v-icon>
+            </span>
+          </template>
+          <span>
+            {{ (item.roles ?? []).map(role => role.title).join(', ') || 'Sin roles' }}
+          </span>
+        </v-tooltip>
       </template>
-      <template #item.city="{ item }">
+      <template v-slot:item.city="{ item }">
         <span>{{ item.city?.title ?? '' }}</span>
       </template>
-      <template #item.actions="{ item }">
-        <v-btn icon color="primary" @click="editUser(item)">
-          <v-icon>mdi-pencil</v-icon>
+      <template v-slot:item.actions="{ item }">
+        <v-btn icon color="primary" @click="editUser(item)" class="text-body-1">
+          <v-icon>mdi-account-edit</v-icon>
         </v-btn>
-        <v-btn icon color="red" @click="deleteUser(item.id)">
-          <v-icon>mdi-delete</v-icon>
+        <v-btn
+          v-if="currentUser.role === 'admin'"
+          icon color="#B71C1C"
+          @click="askDeleteUser(item)"
+          class="text-body-1"
+          style="margin-left: 8px;"
+        >
+          <v-icon>mdi-delete-empty-outline</v-icon>
         </v-btn>
       </template>
     </v-data-table>
 
+    <!-- Diálogo de confirmación para eliminar -->
+    <v-dialog v-model="confirmDeleteDialog" max-width="400">
+      <v-card>
+        <v-card-title class="text-h6">¿Eliminar usuario?</v-card-title>
+        <v-card-text>
+          ¿Estás seguro de que deseas eliminar al usuario
+          <b>{{ userToDelete?.firstName }} {{ userToDelete?.lastName }}</b>?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="confirmDeleteDialog = false">Cancelar</v-btn>
+          <v-btn color="red" @click="confirmDelete">Eliminar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Modal for Create/Edit User -->
     <v-dialog v-model="dialog" max-width="600px">
-      <v-card>
+      <v-card class="elevation-1 text-body-1">
         <v-card-title>
-          <span class="text-h6">{{ editingUser ? 'Edit User' : 'Create User' }}</span>
+          <span class="text-h6 font-weight-bold">{{ editingUser ? 'Edit User' : 'Create User' }}</span>
         </v-card-title>
         <v-card-text>
-          <v-form ref="form">
-            <v-text-field v-model="userForm.firstName" label="First Name"
-              :rules="[v => !!v || 'First name is required']" />
-            <v-text-field v-model="userForm.lastName" label="Last Name"
-              :rules="[v => !!v || 'Last name is required']" />
-            <v-text-field v-model="userForm.telephone" label="Telephone" :rules="[v => !!v || 'Telephone is required']" />
-            <v-text-field v-model="userForm.email" label="Email" :rules="[v => !!v || 'Email is required']" />
-              <v-text-field v-model="userForm.password" label="Password" :rules="[v => !!v || 'Password is required']" />
-            <v-select v-model="userForm.roleIds" :items="roles" item-text="title" item-value="id" label="Roles" multiple
-              :rules="[v => v && v.length > 0 || 'At least one role is required']" />
-              <v-select
+          <v-form ref="form" :lazy-validation="true">
+            <v-text-field
+              v-model="userForm.firstName"
+              label="First Name"
+              :rules="[v => !!v || 'First name is required']"
+              class="text-body-1"
+            />
+            <v-text-field
+              v-model="userForm.lastName"
+              label="Last Name"
+              :rules="[v => !!v || 'Last name is required']"
+              class="text-body-1"
+            />
+            <v-text-field
+              v-model="userForm.telephone"
+              label="Telephone"
+              :rules="[
+                v => !!v || 'Telephone is required',
+                v => /^\d{7,15}$/.test(v) || 'Telephone must be 7-15 digits'
+              ]"
+              class="text-body-1"
+            />
+            <v-text-field
+              v-model="userForm.email"
+              label="Email"
+              :rules="[
+                v => !!v || 'Email is required',
+                v => /.+@.+\..+/.test(v) || 'Email must be valid'
+              ]"
+              class="text-body-1"
+            />
+            <v-text-field
+              v-model="userForm.password"
+              label="Password"
+              :rules="[
+                v => !!v || 'Password is required',
+                v => v.length >= 6 || 'Password must be at least 6 characters'
+              ]"
+              :type="editingUser ? 'text' : 'password'"
+              class="text-body-1"
+            />
+            <v-select
+              v-model="userForm.roleIds"
+              :items="roles"
+              item-text="title"
+              item-value="id"
+              label="Roles"
+              multiple
+              :rules="[v => v && v.length > 0 || 'At least one role is required']"
+              class="text-body-1"
+            />
+            <v-select
               v-model="userForm.typeDocumentId"
               :items="typeDocuments"
               item-text="title"
               item-value="id"
               label="Document Type"
               :rules="[v => !!v || 'Document type is required']"
+              class="text-body-1"
             />
             <v-text-field
               v-model="userForm.document"
               label="Document"
               :rules="[v => !!v || 'Document is required']"
               type="number"
+              class="text-body-1"
+            />
+            <v-select
+              v-model="userForm.cityId"
+              :items="cities"
+              item-text="title"
+              item-value="id"
+              label="City"
+              :rules="[v => !!v || 'City is required']"
+              class="text-body-1"
             />
           </v-form>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn text @click="closeModal">Cancel</v-btn>
-          <v-btn color="primary" @click="saveUser">Save</v-btn>
+          <v-btn text @click="closeModal" class="text-body-1">Cancel</v-btn>
+          <v-btn color="primary" @click="saveUser" class="text-body-1">Save</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -87,21 +169,6 @@ interface TypeDocument {
   title: string;
 }
 
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  telephone: string;
-  email: string;
-  password: string;
-  document: number;
-  typeDocumentId: number;
-  typeDocument?: TypeDocument;
-  city?: City;
-  roles: Role[];
-  roleIds: number[];
-}
-
 interface Role {
   id: number;
   title: string;
@@ -112,47 +179,80 @@ interface City {
   title: string;
 }
 
+interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  telephone: string;
+  email: string;
+  password: string;
+  document: number | string;
+  typeDocumentId: number | string;
+  cityId: number | string;
+  typeDocument?: TypeDocument;
+  city?: City;
+  roles: Role[];
+  roleIds: number[];
+}
+
 const headers = [
-  { text: 'First Name', value: 'firstName' },
-  { text: 'Last Name', value: 'lastName' },
-  { text: 'Email', value: 'email' },
-  { text: 'Document Type', value: 'typeDocument' },
-  { text: 'Document', value: 'document' },
-  { text: 'Roles', value: 'roles' },
-  { text: 'City', value: 'city' },
-  { text: 'Actions', value: 'actions', sortable: false },
+  { title: 'First Name', key: 'firstName' , sortable: false },
+  { title: 'Last Name', key: 'lastName' , sortable: false },
+  { title: 'Email', key: 'email' , sortable: false },
+  { title: 'Telephone', key: 'telephone' , sortable: false },
+  { title: 'Document Type', key: 'typeDocument' , sortable: false },
+  { title: 'Document', key: 'document' , sortable: false },
+  { title: 'Roles', key: 'roles', sortable: false },
+  { title: 'City', key: 'city' , sortable: false },
+  { title: 'Actions', key: 'actions', sortable: false },
 ];
 
 const users = ref<User[]>([]);
 const roles = ref<Role[]>([]);
 const typeDocuments = ref<TypeDocument[]>([]);
+const cities = ref<City[]>([]);
 const dialog = ref(false);
 const editingUser = ref<User | null>(null);
-const userForm = ref<User>({
+
+// Simulación de usuario actual (ajusta según tu lógica real)
+const currentUser = ref({ role: 'admin' }); // Cambia a 'user' para probar restricción
+
+const confirmDeleteDialog = ref(false);
+const userToDelete = ref<User | null>(null);
+
+const emptyUserForm: User = {
   id: 0,
   firstName: '',
   lastName: '',
   telephone: '',
   email: '',
   password: '',
-  document: 0,
-  typeDocumentId: 0,
+  document: '',
+  typeDocumentId: '',
+  cityId: '',
   roles: [],
   roleIds: [],
-});
+};
+
+const userForm = ref<User>({ ...emptyUserForm });
+const form = ref();
 
 const fetchData = () => {
   fetchUsers();
   fetchRoles();
   fetchTypeDocuments();
-}
+  fetchCities();
+};
 
 const fetchUsers = async () => {
   try {
     const response = await service.index<User[]>(CONFIG.api.users, { with: 'roles,city,typeDocument' });
     users.value = response.map(user => ({
       ...user,
-      roleIds: (user.roles || []).map(role => role.id),
+      roleIds: (user.roles ?? []).map(role => role.id),
+      document: user.document,
+      typeDocumentId: user.typeDocumentId,
+      cityId: user.cityId ?? '',
     }));
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -177,18 +277,18 @@ const fetchTypeDocuments = async () => {
   }
 };
 
+const fetchCities = async () => {
+  try {
+    const response = await service.index<City[]>(CONFIG.api.cities);
+    cities.value = response;
+  } catch (error) {
+    console.error('Error fetching cities:', error);
+  }
+};
+
 const openCreateModal = () => {
   editingUser.value = null;
-  userForm.value = {
-    id: 0,
-    firstName: '',
-    lastName: '',
-    email: '',
-    document: 0,
-    typeDocumentId: 0,
-    roles: [],
-    roleIds: [],
-  };
+  userForm.value = { ...emptyUserForm };
   dialog.value = true;
 };
 
@@ -196,29 +296,46 @@ const editUser = (user: User) => {
   editingUser.value = user;
   userForm.value = {
     ...user,
-    roleIds: user.roleIds || [],
+    password: user.password, // No mostrar la contraseña anterior
+    roleIds: (user.roles ?? []).map(role => role.id),
     document: user.document,
     typeDocumentId: user.typeDocumentId,
+    cityId: user.cityId ?? (user.city?.id ?? ''),
   };
   dialog.value = true;
 };
 
+const isDuplicate = () => {
+  // Si estás editando, ignora el usuario actual
+  const editingId = editingUser.value ? editingUser.value.id : null;
+  return users.value.some(u =>
+    (u.email === userForm.value.email || u.document === userForm.value.document) &&
+    u.id !== editingId
+  );
+};
+
 const saveUser = async () => {
+  if (!(await form.value?.validate())) return;
+
+  // Validación de duplicados
+  if (isDuplicate()) {
+    alert('Ya existe un usuario con este email o documento.');
+    return;
+  }
+
   try {
     const payload = {
       ...userForm.value,
       roles: userForm.value.roleIds,
+      document: Number(userForm.value.document),
+      typeDocumentId: Number(userForm.value.typeDocumentId),
+      cityId: Number(userForm.value.cityId),
     };
 
     if (editingUser.value) {
       await service.update(CONFIG.api.users, editingUser.value.id.toString(), payload);
-      const index = users.value.findIndex((u) => u.id === editingUser.value?.id);
-      if (index !== -1) {
-        users.value[index] = { ...userForm.value, roles: editingUser.value.roles };
-      }
     } else {
-      const response = await service.store<User>(CONFIG.api.users, payload);
-      users.value.push(response);
+      await service.store<User>(CONFIG.api.users, payload);
     }
     dialog.value = false;
     fetchData();
@@ -240,9 +357,24 @@ const closeModal = () => {
   dialog.value = false;
 };
 
+function askDeleteUser(user: User) {
+  userToDelete.value = user;
+  confirmDeleteDialog.value = true;
+}
+
+async function confirmDelete() {
+  if (userToDelete.value) {
+    const id = userToDelete.value.id;
+    await deleteUser(id);
+    // Elimina el usuario del array local inmediatamente
+    users.value = users.value.filter(u => u.id !== id);
+    confirmDeleteDialog.value = false;
+    userToDelete.value = null;
+  }
+}
+
 onMounted(() => {
-  fetchUsers();
-  fetchRoles();
-  fetchTypeDocuments();
+  fetchData();
 });
 </script>
+
