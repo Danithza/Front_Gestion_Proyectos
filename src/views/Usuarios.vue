@@ -9,8 +9,17 @@
       </v-col>
     </v-row>
 
+    <!-- Search Field -->
+    <v-text-field
+      v-model="search"
+      label="Buscar usuario"
+      prepend-inner-icon="mdi-magnify"
+      class="mb-4"
+      clearable
+    />
+
     <!-- User Table -->
-    <v-data-table :headers="headers" :items="users" item-value="id" class="elevation-2 text-body-2">
+    <v-data-table :headers="headers" :items="filteredUsers" item-value="id" class="elevation-2 text-body-2"  :search="search">
       <template v-slot:item.typeDocument="{ item }">
         <span>{{ item.typeDocument?.abbreviation ?? '' }}</span>
       </template>
@@ -160,7 +169,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
 
@@ -213,6 +222,7 @@ const typeDocuments = ref<TypeDocument[]>([]);
 const cities = ref<City[]>([]);
 const dialog = ref(false);
 const editingUser = ref<User | null>(null);
+const search = ref('');
 
 // Simulación de usuario actual (ajusta según tu lógica real)
 const currentUser = ref({ role: 'admin' }); // Cambia a 'user' para probar restricción
@@ -372,6 +382,16 @@ async function confirmDelete() {
     userToDelete.value = null;
   }
 }
+
+const filteredUsers = computed(() => {
+  if (!search.value) return users.value;
+  const searchLower = search.value.toLowerCase();
+  return users.value.filter(user =>
+    Object.values(user).some(val =>
+      String(val).toLowerCase().includes(searchLower)
+    )
+  );
+});
 
 onMounted(() => {
   fetchData();
