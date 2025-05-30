@@ -21,6 +21,8 @@ import Cities from '@/views/Cities.vue'
 import DocumentTypes from '@/views/DocumentTypes.vue'
 import Statuses from '@/views/Statuses.vue'
 import Priorities from '@/views/Priorities.vue'
+import perfil from '@/views/Perfil.vue'
+import Perfil from '@/views/Perfil.vue'
 const routes = [
   {
     path: '/auth',
@@ -111,6 +113,11 @@ const routes = [
         path: '/equipos',
         name: 'main.equipos',
         component: Equipos
+      },
+      {
+        path: '/perfil',
+        name: 'main.perfil',
+        component: Perfil
       },
     ],
   }
