@@ -9,7 +9,6 @@ import Dashboard from '@/views/Dashboard.vue'
 import Tareas from '@/views/Tarea.vue'
 import Inicio from '@/views/Inicio.vue'
 import Login from '@/views/Login.vue'
-import Registro from '@/views/Registro.vue'
 import RecuperarClave from '@/views/RecuperarClave.vue'
 import Proyectos from '@/views/Proyectos.vue'
 import Reportes from '@/views/Reportes.vue'
@@ -35,11 +34,6 @@ const routes = [
         path: '/login',
         name: 'auth.login',
         component: Login,
-      },
-      {
-        path: '/registro',
-        name: 'auth.register',
-        component: Registro
       },
       {
         path: '/recuperarclave',
