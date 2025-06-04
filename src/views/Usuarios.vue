@@ -192,7 +192,7 @@ import CONFIG from '@/config/app';
 
 interface TypeDocument {
   id: number;
-  title: string;
+  abbreviation: string;
 }
 
 
