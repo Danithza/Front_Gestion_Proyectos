@@ -101,11 +101,12 @@
               class="text-body-1"
             />
             <v-text-field
-              v-model="userForm.telephone"
+              v-model.number="userForm.telephone"
               label="Telephone"
+              type="number"
               :rules="[
                 v => !!v || 'Telephone is required',
-                v => /^\d{7,15}$/.test(v) || 'Telephone must be 7-15 digits'
+                v => /^\d{10}$/.test(String(v)) || 'Telephone must be 10 digits'
               ]"
               class="text-body-1"
             />
@@ -270,21 +271,6 @@ const emptyUserForm: User = {
 const userForm = ref<User>({ ...emptyUserForm });
 const form = ref();
 
-const onlyLettersAndSpacesRegex = /^[\p{L}\s]+$/u;
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const validateDuplicateDocument = (v: string | number) => {
-  if (!v) return true;
-  const exists = users.value.some(u =>
-    String(u.document) === String(v) &&
-    (!editingUser.value || u.id !== editingUser.value.id)
-  );
-  hasDuplicateDocument.value = exists;
-  return !exists || 'Este documento ya existe';
-};
-
-watch(() => userForm.value.document, (newVal) => validateDuplicateDocument(newVal));
-
 const fetchData = () => {
   fetchUsers();
   fetchRoles();
@@ -359,7 +345,11 @@ const isDuplicate = () => {
   // Si estás editando, ignora el usuario actual
   const editingId = editingUser.value ? editingUser.value.id : null;
   return users.value.some(u =>
-    (u.email === userForm.value.email || u.document === userForm.value.document) &&
+    (
+      u.email === userForm.value.email ||
+      u.document === userForm.value.document ||
+      u.telephone === userForm.value.telephone
+    ) &&
     u.id !== editingId
   );
 };
