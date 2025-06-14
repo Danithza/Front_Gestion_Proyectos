@@ -7,57 +7,27 @@
         <p class="text-caption text-medium-emphasis">Administra las ciudades disponibles en la plataforma</p>
       </v-col>
       <v-col cols="12" md="6" class="text-md-right">
-        <v-btn
-          color="primary"
-          size="large"
-          @click="openCreateModal"
-          class="shadow-lg"
-        >
+        <v-btn color="primary" size="large" @click="openCreateModal" class="shadow-lg">
           <v-icon left>mdi-plus-circle-outline</v-icon> Nueva Ciudad
+        </v-btn>
+        <v-btn color="secondary" size="large" class="ml-2" @click="refreshData">
+          <v-icon left>mdi-refresh</v-icon>
         </v-btn>
       </v-col>
     </v-row>
 
     <v-row>
-      <!-- Filtros verticales -->
+      <!-- Filtro de búsqueda -->
       <v-col cols="12" md="3" class="pr-md-6">
         <v-card class="pa-4 rounded-lg sticky-filter" elevation="2">
           <h3 class="text-h6 mb-4 d-flex align-center">
             <v-icon color="primary" class="mr-2">mdi-filter</v-icon>
-            Filtros
+            Buscar
           </h3>
-
-          <v-autocomplete
-            v-model="filters.title"
-            :items="uniqueTitles"
-            label="Filtrar por Título"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-format-title"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
-
-          <v-text-field
-            v-model="filters.search"
-            label="Buscar ciudad"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-magnify"
-            @click:clear="resetFilters"
-          />
-
-          <v-btn
-            block
-            color="secondary"
-            variant="outlined"
-            class="mt-2"
-            @click="resetFilters"
-          >
-            Limpiar filtros
+          <v-text-field v-model="filters.search" label="Buscar ciudad" clearable outlined dense
+            prepend-inner-icon="mdi-magnify" @click:clear="resetFilters" />
+          <v-btn block color="secondary" variant="outlined" class="mt-2" @click="resetFilters">
+            Limpiar búsqueda
           </v-btn>
         </v-card>
       </v-col>
@@ -65,13 +35,8 @@
       <!-- Tarjetas de Ciudades -->
       <v-col cols="12" md="9">
         <transition-group name="list" tag="div" class="d-flex flex-wrap" style="gap: 16px;">
-          <v-card
-            v-for="item in filteredCities"
-            :key="item.id"
-            class="city-card pa-4 rounded-xl"
-            elevation="2"
-            :style="{ borderLeft: '4px solid ' + getRandomColor() }"
-          >
+          <v-card v-for="item in cities" :key="item.id" class="city-card pa-4 rounded-xl" elevation="2"
+            :style="{ borderLeft: '4px solid ' + getRandomColor() }">
             <div class="d-flex justify-space-between align-center mb-2">
               <div class="d-flex align-center">
                 <v-avatar size="40" color="black" class="mr-3">
@@ -83,24 +48,10 @@
                 </div>
               </div>
               <div class="d-flex align-center" style="gap: 8px;">
-                <v-btn
-                  icon
-                  variant="text"
-                  color="blue"
-                  size="small"
-                  @click="editCity(item)"
-                  title="Editar"
-                >
+                <v-btn icon variant="text" color="blue" size="small" @click="editCity(item)" title="Editar">
                   <v-icon>mdi-pencil-box-multiple-outline</v-icon>
                 </v-btn>
-                <v-btn
-                  icon
-                  variant="text"
-                  color="red"
-                  size="small"
-                  @click="confirmDelete(item.id)"
-                  title="Eliminar"
-                >
+                <v-btn icon variant="text" color="red" size="small" @click="confirmDelete(item.id)" title="Eliminar">
                   <v-icon>mdi-delete-alert-outline</v-icon>
                 </v-btn>
               </div>
@@ -109,32 +60,22 @@
         </transition-group>
 
         <!-- Mensaje cuando no hay resultados con filtros -->
-        <v-alert
-          v-if="filteredCities.length === 0 && hasActiveFilters"
-          type="info"
-          variant="tonal"
-          class="mt-4"
-        >
-          No se encontraron ciudades con los filtros aplicados
+        <v-alert v-if="cities.length === 0 && hasActiveFilters" type="info" variant="tonal" class="mt-4">
+          No se encontraron ciudades con la búsqueda aplicada
         </v-alert>
 
         <!-- Mensaje cuando no hay datos -->
-        <v-alert
-          v-if="cities.length === 0 && !loading"
-          type="info"
-          variant="tonal"
-          class="mt-4"
-        >
+        <v-alert v-if="cities.length === 0 && !loading && !hasActiveFilters" type="info" variant="tonal" class="mt-4">
           No hay ciudades registradas
         </v-alert>
 
         <!-- Cargando datos -->
-        <v-progress-circular
-          v-if="loading"
-          indeterminate
-          color="primary"
-          class="mt-4"
-        ></v-progress-circular>
+        <v-progress-circular v-if="loading" indeterminate color="primary" class="mt-4"></v-progress-circular>
+
+        <!-- Paginador -->
+        {{ pagination.total }} ciudades encontradas
+        <v-pagination v-if="pagination.total > pagination.itemsPerPage" v-model="pagination.page"
+          :length="Math.ceil(pagination.total / pagination.itemsPerPage)" class="mt-6" />
       </v-col>
     </v-row>
 
@@ -154,25 +95,11 @@
 
         <v-card-text class="pa-6">
           <v-form ref="form" lazy-validation>
-            <v-text-field
-              v-model="cityForm.title"
-              label="Nombre de la ciudad"
-              outlined
-              :rules="titleRules"
-              @input="normalizeCityName"
-              class="mb-4"
-            />
+            <v-text-field v-model="cityForm.title" label="Nombre de la ciudad" outlined :rules="titleRules"
+              @input="normalizeCityName" class="mb-4" />
 
-            <v-alert
-              v-if="hasDuplicate"
-              type="error"
-              variant="tonal"
-              class="mb-4"
-              border="start"
-              border-color="error"
-              density="compact"
-              icon="mdi-alert-circle-outline"
-            >
+            <v-alert v-if="hasDuplicate" type="error" variant="tonal" class="mb-4" border="start" border-color="error"
+              density="compact" icon="mdi-alert-circle-outline">
               <strong>Error:</strong> Esta ciudad ya existe (incluyendo variaciones con tildes o espacios)
             </v-alert>
           </v-form>
@@ -180,21 +107,11 @@
 
         <v-card-actions class="pa-4 bg-grey-lighten-4">
           <v-spacer></v-spacer>
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="closeModal"
-            :disabled="isSaving"
-          >
+          <v-btn color="grey" variant="text" @click="closeModal" :disabled="isSaving">
             Cancelar
           </v-btn>
-          <v-btn
-            color="primary"
-            :loading="isSaving"
-            :disabled="isSaving || hasDuplicate"
-            @click="saveCity"
-            variant="elevated"
-          >
+          <v-btn color="primary" :loading="isSaving" :disabled="isSaving || hasDuplicate" @click="saveCity"
+            variant="elevated">
             {{ editingCity ? 'Actualizar' : 'Crear' }}
           </v-btn>
         </v-card-actions>
@@ -221,18 +138,10 @@
 
         <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="confirmDeleteDialog = false"
-          >
+          <v-btn color="grey" variant="text" @click="confirmDeleteDialog = false">
             Cancelar
           </v-btn>
-          <v-btn
-            color="red"
-            variant="elevated"
-            @click="deleteConfirmed"
-          >
+          <v-btn color="red" variant="elevated" @click="deleteConfirmed">
             <v-icon left>mdi-delete</v-icon>
             Eliminar
           </v-btn>
@@ -282,46 +191,31 @@ const idToDelete = ref<number | null>(null);
 
 // Filtros
 const filters = ref({
-  title: '',
   search: ''
+});
+
+// Paginación
+const pagination = ref({
+  page: 1,
+  itemsPerPage: 10,
+  total: 0
 });
 
 // Verificar si hay filtros activos
 const hasActiveFilters = computed(() => {
-  return filters.value.title || filters.value.search;
+  return !!filters.value.search;
 });
 
 const resetFilters = () => {
   filters.value = {
-    title: '',
     search: ''
   };
+  pagination.value.page = 1;
 };
 
-// Lista de títulos únicos para el autocomplete
-const uniqueTitles = computed(() => {
-  return Array.from(new Set(cities.value.map(c => c.title))).sort();
-});
-
-// Filtrado de ciudades
-const filteredCities = computed(() => {
-  // Si no hay filtros activos, mostrar todas las ciudades
-  if (!hasActiveFilters.value) {
-    return cities.value;
-  }
-
-  const titleFilter = filters.value.title?.toLowerCase();
-  const searchFilter = filters.value.search?.toLowerCase();
-
-  return cities.value.filter(city => {
-    const cityTitle = city.title.toLowerCase();
-
-    const matchesTitle = titleFilter ? cityTitle.includes(titleFilter) : true;
-    const matchesSearch = searchFilter ? cityTitle.includes(searchFilter) : true;
-
-    return matchesTitle && matchesSearch;
-  });
-});
+const refreshData = () => {
+  fetchCities();
+};
 
 // Colores aleatorios para las tarjetas
 const colors = ['#4CAF50', '#2196F3', '#9C27B0', '#FF9800', '#E91E63', '#00BCD4'];
@@ -347,7 +241,7 @@ const validateDuplicateTitle = (v: string) => {
   const exists = cities.value.some(c => {
     const normalizedExisting = normalizeForComparison(c.title);
     return normalizedExisting === normalizedInput &&
-           (!editingCity.value || c.id !== editingCity.value.id);
+      (!editingCity.value || c.id !== editingCity.value.id);
   });
 
   hasDuplicate.value = exists;
@@ -356,7 +250,6 @@ const validateDuplicateTitle = (v: string) => {
 
 // Función para normalizar el input (permite escribir artículos)
 const normalizeCityName = () => {
-  // Permite letras, espacios y algunos caracteres especiales para artículos
   if (cityForm.value.title) {
     cityForm.value.title = cityForm.value.title
     checkDuplicateTitle();
@@ -382,8 +275,20 @@ const titleRules = [
 const fetchCities = async () => {
   try {
     loading.value = true;
-    const response = await service.index<City[]>(CONFIG.api.cities);
-    cities.value = response;
+    // Construir parámetros de consulta
+    const params: any = {
+      page: pagination.value.page,
+      per_page: pagination.value.itemsPerPage,
+    };
+    if (filters.value.search) {
+      params.page = 1
+      params.search = filters.value.search
+    };
+
+    // Llama al API con filtros y paginación
+    const response = await service.index<{ data: City[], total: number }>(CONFIG.api.cities, params);
+    cities.value = response.data;
+    pagination.value.total = response.meta.total;
   } catch (error) {
     showSnackbar('Error al obtener ciudades', 'error');
   } finally {
@@ -409,17 +314,15 @@ const saveCity = async () => {
   if (hasDuplicate.value) return;
   isSaving.value = true;
   try {
-    // Normalizar el título antes de guardar
     normalizeCityName();
 
     if (editingCity.value && cityForm.value.id) {
       await service.update(CONFIG.api.cities, editingCity.value.id.toString(), cityForm.value);
-      const index = cities.value.findIndex(c => c.id === editingCity.value?.id);
-      if (index !== -1) cities.value[index] = { ...cityForm.value } as City;
+      fetchCities();
       showSnackbar('Ciudad actualizada correctamente', 'success');
     } else {
-      const response = await service.store<City>(CONFIG.api.cities, cityForm.value);
-      cities.value.push(response);
+      await service.store<City>(CONFIG.api.cities, cityForm.value);
+      fetchCities();
       showSnackbar('Ciudad creada exitosamente', 'success');
     }
     dialog.value = false;
@@ -439,7 +342,7 @@ const deleteConfirmed = async () => {
   if (idToDelete.value !== null) {
     try {
       await service.delete(CONFIG.api.cities, idToDelete.value.toString());
-      cities.value = cities.value.filter(c => c.id !== idToDelete.value);
+      fetchCities();
       showSnackbar('Ciudad eliminada con éxito', 'success');
     } catch (error) {
       showSnackbar('Error al eliminar la ciudad', 'error');
@@ -461,6 +364,14 @@ const showSnackbar = (message: string, color = 'success') => {
   snackbar.value = true;
 };
 
+// Observar cambios en filtros y paginación para recargar datos
+watch(
+  () => [filters.value.search, pagination.value.page, pagination.value.itemsPerPage],
+  () => {
+    fetchCities();
+  }
+);
+
 onMounted(fetchCities);
 </script>
 
@@ -479,13 +390,14 @@ onMounted(fetchCities);
 
 .city-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
 }
 
 .list-enter-active,
 .list-leave-active {
   transition: all 0.5s ease;
 }
+
 .list-enter-from,
 .list-leave-to {
   opacity: 0;

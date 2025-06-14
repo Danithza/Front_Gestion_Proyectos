@@ -51,7 +51,7 @@ class BaseService {
     }
 
     // Update an existing resource by ID (PUT /path/:id)
-    public async update<T>(path: string, id: string, data: any): Promise<T> {
+    public async update<T>(path: string, id: any, data: any): Promise<T> {
         const response = await fetch(`${this.baseUrl}${path}/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
