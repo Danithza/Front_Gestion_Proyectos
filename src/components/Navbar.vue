@@ -7,20 +7,28 @@
     flat
     class="navbar-completo"
   >
+    <!-- Logo + Título centrado -->
     <v-btn text class="d-flex align-center" to="/">
-      <v-img
-        src="@/assets/Logo.png"
-        alt="Logo Linex"
-        max-width="40"
-        max-height="40"
-        contain
-        class="me-2 rounded"
-      />
-      <span class="text-h6 font-weight-bold">Linex</span>
+      <v-row align="center" class="ma-0 pa-0" no-gutters>
+        <v-col class="d-flex align-center" cols="auto">
+          <v-img
+            src="@/assets/Logo.png"
+            alt="Logo Linex"
+            max-width="40"
+            max-height="40"
+            contain
+            class="me-2 rounded"
+          />
+        </v-col>
+        <v-col class="d-flex align-center" cols="auto">
+          <span class="text-h6 font-weight-bold">Linex Plataforma</span>
+        </v-col>
+      </v-row>
     </v-btn>
 
     <v-spacer />
 
+    <!-- Barra de búsqueda -->
     <v-text-field
       v-model="search"
       flat
@@ -33,14 +41,24 @@
       style="max-width: 300px"
     />
 
-    <!-- Componente Notificación -->
-    <Notificacion />
+    <!-- Componente Notificación con icono estilizado -->
+    <div class="menu-icon">
+      <Notificacion />
+    </div>
 
-    <!-- Componente Configuración -->
-    <Configuracion />
+    <!-- Componente Configuración con icono estilizado -->
+    <div class="menu-icon">
+      <Configuracion />
+    </div>
 
-    <!-- Componente Perfil / Menú -->
-    <PerfilMenu />
+    <!-- Componente Perfil con icono más parecido al estilo solicitado -->
+    <div class="menu-icon">
+      <PerfilMenu>
+        <template #activator="{ on, attrs }">
+          <v-icon v-bind="attrs" v-on="on" size="32">mdi-account-circle-outline</v-icon>
+        </template>
+      </PerfilMenu>
+    </div>
   </v-app-bar>
 </template>
 
@@ -67,5 +85,20 @@ const search = ref('')
 
 .search-field .v-input__control {
   border-radius: 20px;
+}
+
+.menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.menu-icon:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
 }
 </style>
