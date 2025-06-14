@@ -9,32 +9,17 @@
 
     <!-- Columnas estilo Trello -->
     <div class="d-flex justify-space-between align-start flex-wrap">
-      <div
-        v-for="estado in estados"
-        :key="estado"
-        class="columna-trello"
-        @drop="onDrop($event, estado)"
-        @dragover.prevent
-      >
-        <h3 class="titulo-columna">{{ estado }}</h3>
+      <div v-for="estado in estados" :key="estado.id" class="columna-trello" @drop="onDrop($event, estado.id)"
+        @dragover.prevent>
+        <h3 class="titulo-columna">{{ estado.title }}</h3>
 
         <transition-group name="fade" tag="div">
-          <v-card
-            v-for="tarea in tareasPorEstado(estado)"
-            :key="tarea.id"
-            class="mb-3 tarea-card"
-            draggable="true"
-            @dragstart="onDragStart($event, tarea.id)"
-            @click="abrirEditor(tarea)"
-            :style="{ backgroundColor: coloresEstado[tarea.estado], borderLeftColor: coloresEstado[tarea.estado] }"
-          >
+          <v-card v-for="tarea in tareasPorEstado(estado.id)" :key="tarea.id" class="mb-3 tarea-card" draggable="true"
+            @dragstart="onDragStart($event, tarea.id)" @click="abrirEditor(tarea)"
+            :style="{ backgroundColor: coloresEstado[estado.title] || '#fff', borderLeftColor: coloresEstado[estado.title] || '#00796b' }">
             <v-card-title class="justify-space-between">
-              <span>{{ tarea.titulo }}</span>
-              <v-chip
-                size="small"
-                :color="colorPrioridad(tarea.prioridad)"
-                text-color="white"
-              >
+              <span>{{ tarea.title }}</span>
+              <v-chip size="small" :color="colorPrioridad(tarea.prioridad)" text-color="white">
                 {{ tarea.prioridad }}
               </v-chip>
             </v-card-title>
@@ -57,14 +42,10 @@
           </v-btn>
         </v-card-title>
         <v-card-text>
-          <v-text-field v-model="tareaEditando.titulo" label="Título" />
+          <v-text-field v-model="tareaEditando.title" label="Título" />
           <v-textarea v-model="tareaEditando.descripcion" label="Descripción" />
           <v-text-field v-model="tareaEditando.encargado" label="Encargado" />
-          <v-select
-            v-model="tareaEditando.prioridad"
-            :items="['Alta', 'Media', 'Baja']"
-            label="Prioridad"
-          />
+          <v-select v-model="tareaEditando.prioridad" :items="['Alta', 'Media', 'Baja']" label="Prioridad" />
         </v-card-text>
         <v-card-actions>
           <v-btn color="error" @click="eliminarTarea(tareaEditando.id)">
@@ -83,38 +64,61 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import AgregarTareaDialog from '@/components/AgregarTarea.vue'
+import service from '@/services/baseService'
 
 interface Tarea {
   id: number
-  titulo: string
+  title: string
   descripcion: string
   encargado: string
-  estado: string
+  statusId: number
   prioridad: string
 }
 
-const tareas = ref<Tarea[]>([])
-const estados = ['Por hacer', 'En proceso', 'Hecho', 'Historial']
-
-const coloresEstado: Record<string, string> = {
-  'Por hacer': '#bbdefb',    // azul claro
-  'En proceso': '#fff9c4',  // amarillo claro
-  'Hecho': '#c8e6c9',       // verde claro
-  'Historial': '#eeeeee',   // gris claro
+interface Estado {
+  id: number
+  title: string
+  color?: string
 }
 
-onMounted(() => {
-  const guardadas = localStorage.getItem('tareas')
-  if (guardadas) tareas.value = JSON.parse(guardadas)
+const tareas = ref<Tarea[]>([])
+const estados = ref<Estado[]>([])
+
+const coloresEstado: Record<string, string> = {}
+
+async function cargarTareas() {
+  try {
+    const data = await service.index<Tarea[]>('/tasks')
+    tareas.value = data
+  } catch (e) {
+    tareas.value = []
+  }
+}
+
+onMounted(async () => {
+  // Obtener tareas desde el API
+  await cargarTareas()
+
+  // Obtener estados desde el API usando baseService
+  try {
+    const data = await service.index<Estado[]>('/statuses', { type: 'task' })
+    estados.value = data
+    data.forEach((estado: Estado) => {
+      if (estado.color) coloresEstado[estado.title] = estado.color
+    })
+  } catch (e) {
+    estados.value = []
+  }
 })
 
 watch(tareas, (nuevas) => {
-  localStorage.setItem('tareas', JSON.stringify(nuevas))
+  // Si quieres guardar localmente, descomenta:
+  // localStorage.setItem('tareas', JSON.stringify(nuevas))
 }, { deep: true })
 
-function tareasPorEstado(estado: string): Tarea[] {
+function tareasPorEstado(estadoNombre: number): Tarea[] {
   return tareas.value
-    .filter((t) => t.estado === estado)
+    .filter((t) => t.statusId === estadoNombre)
     .sort((a, b) => prioridadOrden(b.prioridad) - prioridadOrden(a.prioridad))
 }
 
@@ -130,21 +134,23 @@ function onDragStart(event: DragEvent, id: number) {
   event.dataTransfer?.setData('text/plain', id.toString())
 }
 
-function onDrop(event: DragEvent, nuevoEstado: string) {
+function onDrop(event: DragEvent, nuevoEstado: number) {
   const id = parseInt(event.dataTransfer?.getData('text/plain') || '')
   const tarea = tareas.value.find((t) => t.id === id)
   if (tarea) {
-    tarea.estado = nuevoEstado
+    tarea.statusId = nuevoEstado
+    service.update<Tarea>(`/tasks`, id, { statusId: nuevoEstado })
+      .catch((error) => console.error('Error al actualizar tarea:', error))
   }
 }
 
 const dialog = ref(false)
 const tareaEditando = ref<Tarea>({
   id: 0,
-  titulo: '',
+  title: '',
   descripcion: '',
   encargado: '',
-  estado: '',
+  statusId: 0,
   prioridad: 'Media',
 })
 
@@ -170,10 +176,13 @@ function agregarTarea(nueva: Tarea) {
 </script>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s ease;
 }
-.fade-enter-from, .fade-leave-to {
+
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
@@ -205,6 +214,6 @@ function agregarTarea(nueva: Tarea) {
   background-color: #ffffff;
   border-left: 5px solid #00796b;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
 }
 </style>
