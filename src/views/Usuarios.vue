@@ -5,30 +5,48 @@
         <h2 class="text-h5 font-weight-bold">Gestión de Usuarios</h2>
       </v-col>
       <v-col cols="6" class="text-right">
-
         <v-btn color="primary" @click="openCreateModal" class="text-body-1">Crear Usuario</v-btn>
       </v-col>
     </v-row>
 
-    <!-- Search Field -->
-    <v-text-field
-      v-model="search"
-      label="Buscar usuario"
-      prepend-inner-icon="mdi-magnify"
-      class="mb-4"
-      clearable
-    />
+    <!-- Filtros -->
+    <v-row class="mb-4" align="center">
+      <v-col cols="12" md="6">
+        <v-text-field
+          v-model="filters.search"
+          label="Buscar usuario"
+          prepend-inner-icon="mdi-magnify"
+          clearable
+          @click:clear="resetFilters"
+        />
+      </v-col>
+      <v-col cols="12" md="6">
+        <v-select
+          v-model="filters.role"
+          :items="roles"
+          item-text="title"
+          item-value="id"
+          label="Filtrar por Rol"
+          clearable
+          @click:clear="resetFilters"
+        />
+      </v-col>
+    </v-row>
 
     <!-- User Table -->
-    <v-data-table :headers="headers" :items="filteredUsers" item-value="id" class="elevation-2 text-body-2"  :search="search">
+    <v-data-table
+      :headers="headers"
+      :items="users"
+      item-value="id"
+      class="elevation-2 text-body-2"
+      :loading="loading"
+    >
       <template v-slot:item.typeDocument="{ item }">
         <span>{{ item.typeDocument?.abbreviation ?? '' }}</span>
-
       </template>
       <template v-slot:item.document="{ item }">
         <span>{{ item.document }}</span>
       </template>
-
       <template v-slot:item.roles="{ item }">
         <v-tooltip location="top">
           <template #activator="{ props }">
@@ -40,7 +58,6 @@
             {{ (item.roles ?? []).map(role => role.title).join(', ') || 'Sin roles' }}
           </span>
         </v-tooltip>
-
       </template>
       <template v-slot:item.city="{ item }">
         <span>{{ item.city?.title ?? '' }}</span>
@@ -61,7 +78,6 @@
       </template>
     </v-data-table>
 
-
     <!-- Diálogo de confirmación para eliminar -->
     <v-dialog v-model="confirmDeleteDialog" max-width="400">
       <v-card>
@@ -79,11 +95,9 @@
     </v-dialog>
 
     <!-- Modal for Create/Edit User -->
-
     <v-dialog v-model="dialog" max-width="600px">
       <v-card class="elevation-1 text-body-1">
         <v-card-title>
-
           <span class="text-h6 font-weight-bold">{{ editingUser ? 'Edit User' : 'Create User' }}</span>
         </v-card-title>
         <v-card-text>
@@ -128,36 +142,30 @@
               ]"
               :type="editingUser ? 'text' : 'password'"
               class="text-body-1"
-
             />
             <v-select
               v-model="userForm.roleIds"
               :items="roles"
               item-text="title"
               item-value="id"
-
               label="Roles"
               multiple
               :rules="[v => v && v.length > 0 || 'At least one role is required']"
               class="text-body-1"
-
             />
             <v-select
               v-model="userForm.typeDocumentId"
               :items="typeDocuments"
               item-text="title"
               item-value="id"
-
               label="Document Type"
               :rules="[v => !!v || 'Document type is required']"
               class="text-body-1"
-
             />
             <v-text-field
               v-model="userForm.document"
               label="Documento"
               type="number"
-
               class="text-body-1"
             />
             <v-select
@@ -168,16 +176,13 @@
               label="City"
               :rules="[v => !!v || 'City is required']"
               class="text-body-1"
-
             />
           </v-form>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-
           <v-btn text @click="closeModal" class="text-body-1">Cancel</v-btn>
           <v-btn color="primary" @click="saveUser" class="text-body-1">Save</v-btn>
-
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -185,8 +190,7 @@
 </template>
 
 <script lang="ts" setup>
-
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
 
@@ -195,19 +199,15 @@ interface TypeDocument {
   abbreviation: string;
 }
 
-
 interface Role {
   id: number;
   title: string;
 }
 
-
 interface City {
   id: number;
   title: string;
 }
-
-
 
 interface User {
   id: number;
@@ -220,14 +220,12 @@ interface User {
   typeDocumentId: number | string;
   cityId: number | string;
   typeDocument?: TypeDocument;
-
   city?: City;
   roles: Role[];
   roleIds: number[];
 }
 
 const headers = [
-
   { title: 'First Name', key: 'firstName' , sortable: false },
   { title: 'Last Name', key: 'lastName' , sortable: false },
   { title: 'Email', key: 'email' , sortable: false },
@@ -246,7 +244,13 @@ const cities = ref<City[]>([]);
 const dialog = ref(false);
 const editingUser = ref<User | null>(null);
 
-const search = ref('');
+const loading = ref(false);
+
+// Filtros
+const filters = ref<{ search: string; role: number | null }>({
+  search: '',
+  role: null,
+});
 
 // Simulación de usuario actual (ajusta según tu lógica real)
 const currentUser = ref({ role: 'admin' }); // Cambia a 'user' para probar restricción
@@ -279,8 +283,19 @@ const fetchData = () => {
 };
 
 const fetchUsers = async () => {
+  loading.value = true;
   try {
-    const response = await service.index<User[]>(CONFIG.api.users, { with: 'roles,city,typeDocument' });
+    // Construir parámetros de consulta para filtros
+    const params: any = {
+      with: 'roles,city,typeDocument',
+    };
+    if (filters.value.search) {
+      params.search = filters.value.search;
+    }
+    if (filters.value.role) {
+      params.role = filters.value.role;
+    }
+    const response = await service.index<User[]>(CONFIG.api.users, params);
     users.value = response.map(user => ({
       ...user,
       roleIds: (user.roles ?? []).map(role => role.id),
@@ -290,6 +305,8 @@ const fetchUsers = async () => {
     }));
   } catch (error) {
     console.error('Error fetching users:', error);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -322,7 +339,6 @@ const fetchCities = async () => {
 
 const openCreateModal = () => {
   editingUser.value = null;
-
   userForm.value = { ...emptyUserForm };
   dialog.value = true;
 };
@@ -331,8 +347,7 @@ const editUser = (user: User) => {
   editingUser.value = user;
   userForm.value = {
     ...user,
-
-    password: user.password, // No mostrar la contraseña anterior
+    password: user.password,
     roleIds: (user.roles ?? []).map(role => role.id),
     document: user.document,
     typeDocumentId: user.typeDocumentId,
@@ -355,15 +370,12 @@ const isDuplicate = () => {
 };
 
 const saveUser = async () => {
-
   if (!(await form.value?.validate())) return;
-
   // Validación de duplicados
   if (isDuplicate()) {
     alert('Ya existe un usuario con este email o documento.');
     return;
   }
-
   try {
     const payload = {
       ...userForm.value,
@@ -413,15 +425,18 @@ async function confirmDelete() {
   }
 }
 
-const filteredUsers = computed(() => {
-  if (!search.value) return users.value;
-  const searchLower = search.value.toLowerCase();
-  return users.value.filter(user =>
-    Object.values(user).some(val =>
-      String(val).toLowerCase().includes(searchLower)
-    )
-  );
-});
+// Filtros: recargar usuarios al cambiar filtros
+const resetFilters = () => {
+  filters.value.search = '';
+  filters.value.role = null;
+};
+
+watch(
+  () => [filters.value.search, filters.value.role],
+  () => {
+    fetchUsers();
+  }
+);
 
 onMounted(() => {
   fetchData();

@@ -19,67 +19,11 @@
     </v-row>
 
     <v-row>
-      <!-- Filtros verticales -->
-      <v-col cols="12" md="3" class="pr-md-6">
-        <v-card class="pa-4 rounded-lg sticky-filter" elevation="2">
-          <h3 class="text-h6 mb-4 d-flex align-center">
-            <v-icon color="primary" class="mr-2">mdi-filter</v-icon>
-            Filtros
-          </h3>
-
-          <v-autocomplete
-            v-model="filters.title"
-            :items="uniqueTitles"
-            label="Filtrar por Título"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-format-title"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
-
-          <v-autocomplete
-            v-model="filters.type"
-            :items="uniqueTypes"
-            label="Filtrar por Tipo"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-form-select"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
-
-          <v-text-field
-            v-model="filters.search"
-            label="Buscar estado"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-magnify"
-            @click:clear="resetFilters"
-          />
-
-          <v-btn
-            block
-            color="secondary"
-            variant="outlined"
-            class="mt-2"
-            @click="resetFilters"
-          >
-            Limpiar filtros
-          </v-btn>
-        </v-card>
-      </v-col>
-
-      <!-- Tarjetas de Estados -->
-      <v-col cols="12" md="9">
+      <!-- Tarjetas de Estados SIN FILTROS -->
+      <v-col cols="12">
         <transition-group name="list" tag="div" class="d-flex flex-wrap" style="gap: 16px;">
           <v-card
-            v-for="item in filteredStatuses"
+            v-for="item in statuses"
             :key="item.id"
             class="status-card pa-4 rounded-xl"
             elevation="2"
@@ -87,7 +31,6 @@
           >
             <div class="d-flex justify-space-between align-center mb-2">
               <div class="d-flex align-center">
-
                 <v-avatar size="40" color="black" class="mr-3">
                   <v-icon color="white">mdi-checkbox-marked-circle-outline</v-icon>
                 </v-avatar>
@@ -125,16 +68,6 @@
             </div>
           </v-card>
         </transition-group>
-
-        <!-- Mensaje cuando no hay resultados con filtros -->
-        <v-alert
-          v-if="filteredStatuses.length === 0 && hasActiveFilters"
-          type="info"
-          variant="tonal"
-          class="mt-4"
-        >
-          No se encontraron estados con los filtros aplicados
-        </v-alert>
 
         <!-- Mensaje cuando no hay datos -->
         <v-alert
@@ -328,59 +261,7 @@ const types = [
   { text: 'Proyecto', value: 'project' }
 ];
 
-// Filtros
-const filters = ref({
-  title: '',
-  type: '',
-  search: ''
-});
-
-// Verificar si hay filtros activos
-const hasActiveFilters = computed(() => {
-  return filters.value.title || filters.value.type || filters.value.search;
-});
-
-const resetFilters = () => {
-  filters.value = {
-    title: '',
-    type: '',
-    search: ''
-  };
-};
-
-// Lista de títulos y tipos únicos para el autocomplete
-const uniqueTitles = computed(() => {
-  return Array.from(new Set(statuses.value.map(s => s.title))).sort();
-});
-
-const uniqueTypes = computed(() => {
-  return Array.from(new Set(statuses.value.map(s => s.type))).sort();
-});
-
-// Filtrado de estados
-const filteredStatuses = computed(() => {
-  // Si no hay filtros activos, mostrar todos los estados
-  if (!hasActiveFilters.value) {
-    return statuses.value;
-  }
-
-  const titleFilter = filters.value.title?.toLowerCase();
-  const typeFilter = filters.value.type;
-  const searchFilter = filters.value.search?.toLowerCase();
-
-  return statuses.value.filter(status => {
-    const statusTitle = status.title.toLowerCase();
-    const statusDescription = status.description.toLowerCase();
-
-    const matchesTitle = titleFilter ? statusTitle.includes(titleFilter) : true;
-    const matchesType = typeFilter ? status.type === typeFilter : true;
-    const matchesSearch = searchFilter ?
-      (statusTitle.includes(searchFilter) ||
-      statusDescription.includes(searchFilter)) : true;
-
-    return matchesTitle && matchesType && matchesSearch;
-  });
-});
+// --- ELIMINADO: Filtros y lógica relacionada ---
 
 const colors = ['#4CAF50', '#2196F3', '#9C27B0', '#FF9800', '#E91E63', '#00BCD4'];
 const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
@@ -414,7 +295,6 @@ const validateDuplicateTitle = (v: string) => {
 
 // Función para normalizar el input (permite escribir artículos)
 const normalizeStatusName = () => {
-  // Permite letras, espacios y algunos caracteres especiales para artículos
   if (statusForm.value.title) {
     statusForm.value.title = statusForm.value.title
     checkDuplicateTitle();
@@ -475,7 +355,6 @@ const saveStatus = async () => {
   if (hasDuplicate.value) return;
   isSaving.value = true;
   try {
-    // Normalizar el título antes de guardar
     normalizeStatusName();
 
     if (editingStatus.value && statusForm.value.id) {
