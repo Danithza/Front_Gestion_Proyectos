@@ -19,69 +19,11 @@
     </v-row>
 
     <v-row>
-      <!-- Filtros verticales -->
-      <v-col cols="12" md="3" class="pr-md-6">
-        <v-card class="pa-4 rounded-lg sticky-filter" elevation="2">
-          <h3 class="text-h6 mb-4 d-flex align-center">
-            <v-icon color="primary" class="mr-2">mdi-filter</v-icon>
-            Filtros
-          </h3>
-
-          <v-autocomplete
-            v-model="filters.title"
-            :items="uniqueTitles"
-            label="Filtrar por Título"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-format-title"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
-
-          <v-autocomplete
-            v-model="filters.type"
-            :items="types"
-            item-title="text"
-            item-value="value"
-            label="Filtrar por Tipo"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-form-select"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
-
-          <v-text-field
-            v-model="filters.search"
-            label="Buscar prioridad"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-magnify"
-            @click:clear="resetFilters"
-          />
-
-          <v-btn
-            block
-            color="secondary"
-            variant="outlined"
-            class="mt-2"
-            @click="resetFilters"
-          >
-            Limpiar filtros
-          </v-btn>
-        </v-card>
-      </v-col>
-
-      <!-- Tarjetas de Prioridades -->
-      <v-col cols="12" md="9">
+      <!-- Tarjetas de Prioridades SIN FILTROS -->
+      <v-col cols="12">
         <transition-group name="list" tag="div" class="d-flex flex-wrap" style="gap: 16px;">
           <v-card
-            v-for="item in filteredPriorities"
+            v-for="item in priorities"
             :key="item.id"
             class="priority-card pa-4 rounded-xl"
             elevation="2"
@@ -89,7 +31,6 @@
           >
             <div class="d-flex justify-space-between align-center mb-2">
               <div class="d-flex align-center">
-
                  <v-avatar size="40" color="black" class="mr-3">
                   <v-icon color="white">mdi-flag-outline</v-icon>
                 </v-avatar>
@@ -127,16 +68,6 @@
             </div>
           </v-card>
         </transition-group>
-
-        <!-- Mensaje cuando no hay resultados con filtros -->
-        <v-alert
-          v-if="filteredPriorities.length === 0 && hasActiveFilters"
-          type="info"
-          variant="tonal"
-          class="mt-4"
-        >
-          No se encontraron prioridades con los filtros aplicados
-        </v-alert>
 
         <!-- Mensaje cuando no hay datos -->
         <v-alert
@@ -330,60 +261,6 @@ const types = [
   { text: 'Proyecto', value: 'project' }
 ];
 
-// Filtros
-const filters = ref({
-  title: '',
-  type: '',
-  search: ''
-});
-
-// Verificar si hay filtros activos
-const hasActiveFilters = computed(() => {
-  return filters.value.title || filters.value.type || filters.value.search;
-});
-
-const resetFilters = () => {
-  filters.value = {
-    title: '',
-    type: '',
-    search: ''
-  };
-};
-
-// Lista de títulos y tipos únicos para el autocomplete
-const uniqueTitles = computed(() => {
-  return Array.from(new Set(priorities.value.map(p => p.title))).sort();
-});
-
-const uniqueTypes = computed(() => {
-  return Array.from(new Set(priorities.value.map(p => p.type))).sort();
-});
-
-// Filtrado de prioridades
-const filteredPriorities = computed(() => {
-  // Si no hay filtros activos, mostrar todas las prioridades
-  if (!hasActiveFilters.value) {
-    return priorities.value;
-  }
-
-  const titleFilter = filters.value.title?.toLowerCase();
-  const typeFilter = filters.value.type;
-  const searchFilter = filters.value.search?.toLowerCase();
-
-  return priorities.value.filter(priority => {
-    const priorityTitle = priority.title.toLowerCase();
-    const priorityDescription = priority.description.toLowerCase();
-
-    const matchesTitle = titleFilter ? priorityTitle.includes(titleFilter) : true;
-    const matchesType = typeFilter ? priority.type === typeFilter : true;
-    const matchesSearch = searchFilter ?
-      (priorityTitle.includes(searchFilter) ||
-      priorityDescription.includes(searchFilter)) : true;
-
-    return matchesTitle && matchesType && matchesSearch;
-  });
-});
-
 const colors = ['#4CAF50', '#2196F3', '#9C27B0', '#FF9800', '#E91E63', '#00BCD4'];
 const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
 
@@ -416,7 +293,6 @@ const validateDuplicateTitle = (v: string) => {
 
 // Función para normalizar el input (permite escribir artículos)
 const normalizePriorityName = () => {
-  // Permite letras, espacios y algunos caracteres especiales para artículos
   if (priorityForm.value.title) {
     priorityForm.value.title = priorityForm.value.title
     checkDuplicateTitle();
@@ -478,7 +354,6 @@ const savePriority = async () => {
   if (hasDuplicate.value) return;
   isSaving.value = true;
   try {
-    // Normalizar el título antes de guardar
     normalizePriorityName();
 
     if (editingPriority.value && priorityForm.value.id) {
@@ -534,11 +409,6 @@ onMounted(fetchPriorities);
 </script>
 
 <style scoped>
-.sticky-filter {
-  position: sticky;
-  top: 20px;
-}
-
 .priority-card {
   transition: all 0.3s ease;
   width: calc(33.333% - 11px);

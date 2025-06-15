@@ -19,67 +19,11 @@
     </v-row>
 
     <v-row>
-      <!-- Filtros verticales -->
-      <v-col cols="12" md="3" class="pr-md-6">
-        <v-card class="pa-4 rounded-lg sticky-filter" elevation="2">
-          <h3 class="text-h6 mb-4 d-flex align-center">
-            <v-icon color="primary" class="mr-2">mdi-filter</v-icon>
-            Filtros
-          </h3>
-
-          <v-autocomplete
-            v-model="filters.abbreviation"
-            :items="uniqueAbbreviations"
-            label="Filtrar por Abreviatura"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-alphabetical-variant"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
-
-          <v-autocomplete
-            v-model="filters.title"
-            :items="uniqueTitles"
-            label="Filtrar por Título"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-format-title"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
-
-          <v-text-field
-            v-model="filters.search"
-            label="Buscar documento"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-magnify"
-            @click:clear="resetFilters"
-          />
-
-          <v-btn
-            block
-            color="secondary"
-            variant="outlined"
-            class="mt-2"
-            @click="resetFilters"
-          >
-            Limpiar filtros
-          </v-btn>
-        </v-card>
-      </v-col>
-
-      <!-- Tarjetas de Documentos -->
-      <v-col cols="12" md="9">
+      <!-- Tarjetas de Documentos SIN FILTROS -->
+      <v-col cols="12">
         <transition-group name="list" tag="div" class="d-flex flex-wrap" style="gap: 16px;">
           <v-card
-            v-for="item in filteredTypeDocuments"
+            v-for="item in typeDocuments"
             :key="item.id"
             class="document-card pa-4 rounded-xl"
             elevation="2"
@@ -120,16 +64,6 @@
             </div>
           </v-card>
         </transition-group>
-
-        <!-- Mensaje cuando no hay resultados con filtros -->
-        <v-alert
-          v-if="filteredTypeDocuments.length === 0 && hasActiveFilters"
-          type="info"
-          variant="tonal"
-          class="mt-4"
-        >
-          No se encontraron tipos de documento con los filtros aplicados
-        </v-alert>
 
         <!-- Mensaje cuando no hay datos -->
         <v-alert
@@ -303,59 +237,6 @@ const hasDuplicate = ref(false);
 const confirmDeleteDialog = ref(false);
 const idToDelete = ref<number | null>(null);
 
-// Filtros
-const filters = ref({
-  abbreviation: '',
-  title: '',
-  search: ''
-});
-
-// Verificar si hay filtros activos
-const hasActiveFilters = computed(() => {
-  return filters.value.abbreviation || filters.value.title || filters.value.search;
-});
-
-const resetFilters = () => {
-  filters.value = {
-    abbreviation: '',
-    title: '',
-    search: ''
-  };
-};
-
-// Lista de abreviaturas y títulos únicos para el autocomplete
-const uniqueAbbreviations = computed(() => {
-  return Array.from(new Set(typeDocuments.value.map(d => d.abbreviation))).sort();
-});
-
-const uniqueTitles = computed(() => {
-  return Array.from(new Set(typeDocuments.value.map(d => d.title))).sort();
-});
-
-// Filtrado de documentos
-const filteredTypeDocuments = computed(() => {
-  // Si no hay filtros activos, mostrar todos los documentos
-  if (!hasActiveFilters.value) {
-    return typeDocuments.value;
-  }
-
-  const abbrFilter = filters.value.abbreviation?.toLowerCase();
-  const titleFilter = filters.value.title?.toLowerCase();
-  const searchFilter = filters.value.search?.toLowerCase();
-
-  return typeDocuments.value.filter(doc => {
-    const docAbbr = doc.abbreviation.toLowerCase();
-    const docTitle = doc.title.toLowerCase();
-
-    const matchesAbbr = abbrFilter ? docAbbr.includes(abbrFilter) : true;
-    const matchesTitle = titleFilter ? docTitle.includes(titleFilter) : true;
-    const matchesSearch = searchFilter ?
-      docAbbr.includes(searchFilter) || docTitle.includes(searchFilter) : true;
-
-    return matchesAbbr && matchesTitle && matchesSearch;
-  });
-});
-
 // Colores aleatorios para las tarjetas
 const colors = ['#4CAF50', '#2196F3', '#9C27B0', '#FF9800', '#E91E63', '#00BCD4'];
 const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
@@ -514,44 +395,3 @@ const showSnackbar = (message: string, color = 'success') => {
 
 onMounted(fetchTypeDocuments);
 </script>
-
-<style scoped>
-.sticky-filter {
-  position: sticky;
-  top: 20px;
-}
-
-.document-card {
-  transition: all 0.3s ease;
-  width: calc(33.333% - 11px);
-  min-width: 280px;
-  flex-grow: 1;
-}
-
-.document-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-}
-
-.list-enter-active,
-.list-leave-active {
-  transition: all 0.5s ease;
-}
-.list-enter-from,
-.list-leave-to {
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-@media (max-width: 960px) {
-  .document-card {
-    width: calc(50% - 8px);
-  }
-}
-
-@media (max-width: 600px) {
-  .document-card {
-    width: 100%;
-  }
-}
-</style>
