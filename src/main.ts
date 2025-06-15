@@ -2,6 +2,8 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { createPinia } from 'pinia'
 import router from './router'
+import { useAuthStore } from '@/stores/authStore'
+import service from '@/services/baseService';
 
 import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
@@ -49,3 +51,8 @@ app.use(router)
 app.use(i18n) // ✅ usar i18n global
 app.use(vuetify)
 app.mount('#app')
+
+// Restore the token in the baseService
+const authStore = useAuthStore();
+if (authStore.token) service.setToken(authStore.token);
+authStore.me()

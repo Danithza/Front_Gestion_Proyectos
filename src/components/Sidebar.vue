@@ -20,10 +20,14 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/authStore'
+const authStore = useAuthStore()
+
 interface NavItem {
   title: string
   icon: string
   to: string
+  permission?: string
 }
 
 const allItems: NavItem[] = [
@@ -33,11 +37,14 @@ const allItems: NavItem[] = [
   { title: 'Reportes', icon: 'mdi-chart-box-outline', to: '/reportes' },
   { title: 'Usuarios', icon: 'mdi-account', to: '/usuarios' },
   { title: 'Roles', icon: 'mdi-account-cog-outline', to: '/roles' },
-  { title: 'Cities', icon: 'mdi-home-city', to: '/cities' },
+  { title: 'Cities', icon: 'mdi-home-city', to: '/cities', permission: 'city:read' },
   { title: 'Document Types', icon: 'mdi-badge-account', to: '/document-types' },
   { title: 'Statuses', icon: 'mdi-list-status', to: '/statuses' },
-  { title: 'Priorities', icon: 'mdi-flag-variant', to: '/priorities' }
-]
+  { title: 'Priorities', icon: 'mdi-flag-variant', to: '/priorities' },
+].filter((item: NavItem) => {
+  if (!item.permission) return true
+  return authStore.hasPermission(item.permission)
+})
 </script>
 
 <style scoped>

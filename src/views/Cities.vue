@@ -7,7 +7,8 @@
         <p class="text-caption text-medium-emphasis">Administra las ciudades disponibles en la plataforma</p>
       </v-col>
       <v-col cols="12" md="6" class="text-md-right">
-        <v-btn color="primary" size="large" @click="openCreateModal" class="shadow-lg">
+        <v-btn color="primary" size="large" @click="openCreateModal" class="shadow-lg"
+                v-if="authStore.hasPermission('city:create')">
           <v-icon left>mdi-plus-circle-outline</v-icon> Nueva Ciudad
         </v-btn>
         <v-btn color="secondary" size="large" class="ml-2" @click="refreshData">
@@ -168,6 +169,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
+import { useAuthStore } from '@/stores/authStore.ts'
+const authStore = useAuthStore();
 
 interface City {
   id: number;
