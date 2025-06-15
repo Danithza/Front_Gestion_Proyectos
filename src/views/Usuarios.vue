@@ -12,35 +12,17 @@
     <!-- Filtros -->
     <v-row class="mb-4" align="center">
       <v-col cols="12" md="6">
-        <v-text-field
-          v-model="filters.search"
-          label="Buscar usuario"
-          prepend-inner-icon="mdi-magnify"
-          clearable
-          @click:clear="resetFilters"
-        />
+        <v-text-field v-model="filters.search" label="Buscar usuario" prepend-inner-icon="mdi-magnify" clearable
+          @click:clear="resetFilters" />
       </v-col>
       <v-col cols="12" md="6">
-        <v-select
-          v-model="filters.role"
-          :items="roles"
-          item-text="title"
-          item-value="id"
-          label="Filtrar por Rol"
-          clearable
-          @click:clear="resetFilters"
-        />
+        <v-select v-model="filters.role" :items="roles" item-text="title" item-value="id" label="Filtrar por Rol"
+          clearable @click:clear="resetFilters" />
       </v-col>
     </v-row>
 
     <!-- User Table -->
-    <v-data-table
-      :headers="headers"
-      :items="users"
-      item-value="id"
-      class="elevation-2 text-body-2"
-      :loading="loading"
-    >
+    <v-data-table :headers="headers" :items="users" item-value="id" class="elevation-2 text-body-2" :loading="loading">
       <template v-slot:item.typeDocument="{ item }">
         <span>{{ item.typeDocument?.abbreviation ?? '' }}</span>
       </template>
@@ -55,7 +37,7 @@
             </span>
           </template>
           <span>
-            {{ (item.roles ?? []).map(role => role.title).join(', ') || 'Sin roles' }}
+            {{(item.roles ?? []).map(role => role.title).join(', ') || 'Sin roles'}}
           </span>
         </v-tooltip>
       </template>
@@ -66,13 +48,8 @@
         <v-btn icon color="primary" @click="editUser(item)" class="text-body-1">
           <v-icon>mdi-account-edit</v-icon>
         </v-btn>
-        <v-btn
-          v-if="currentUser.role === 'admin'"
-          icon color="#B71C1C"
-          @click="askDeleteUser(item)"
-          class="text-body-1"
-          style="margin-left: 8px;"
-        >
+        <v-btn v-if="currentUser.role === 'admin'" icon color="#B71C1C" @click="askDeleteUser(item)" class="text-body-1"
+          style="margin-left: 8px;">
           <v-icon>mdi-delete-empty-outline</v-icon>
         </v-btn>
       </template>
@@ -102,81 +79,32 @@
         </v-card-title>
         <v-card-text>
           <v-form ref="form" :lazy-validation="true">
-            <v-text-field
-              v-model="userForm.firstName"
-              label="First Name"
-              :rules="[v => !!v || 'First name is required']"
-              class="text-body-1"
-            />
-            <v-text-field
-              v-model="userForm.lastName"
-              label="Last Name"
-              :rules="[v => !!v || 'Last name is required']"
-              class="text-body-1"
-            />
-            <v-text-field
-              v-model.number="userForm.telephone"
-              label="Telephone"
-              type="number"
-              :rules="[
-                v => !!v || 'Telephone is required',
-                v => /^\d{10}$/.test(String(v)) || 'Telephone must be 10 digits'
-              ]"
-              class="text-body-1"
-            />
-            <v-text-field
-              v-model="userForm.email"
-              label="Email"
-              :rules="[
-                v => !!v || 'Email is required',
-                v => /.+@.+\..+/.test(v) || 'Email must be valid'
-              ]"
-              class="text-body-1"
-            />
-            <v-text-field
-              v-model="userForm.password"
-              label="Password"
-              :rules="[
-                v => !!v || 'Password is required',
-                v => v.length >= 6 || 'Password must be at least 6 characters'
-              ]"
-              :type="editingUser ? 'text' : 'password'"
-              class="text-body-1"
-            />
-            <v-select
-              v-model="userForm.roleIds"
-              :items="roles"
-              item-text="title"
-              item-value="id"
-              label="Roles"
-              multiple
-              :rules="[v => v && v.length > 0 || 'At least one role is required']"
-              class="text-body-1"
-            />
-            <v-select
-              v-model="userForm.typeDocumentId"
-              :items="typeDocuments"
-              item-text="title"
-              item-value="id"
-              label="Document Type"
-              :rules="[v => !!v || 'Document type is required']"
-              class="text-body-1"
-            />
-            <v-text-field
-              v-model="userForm.document"
-              label="Documento"
-              type="number"
-              class="text-body-1"
-            />
-            <v-select
-              v-model="userForm.cityId"
-              :items="cities"
-              item-text="title"
-              item-value="id"
-              label="City"
-              :rules="[v => !!v || 'City is required']"
-              class="text-body-1"
-            />
+            <div class="text-right mb-6">
+              <PermissionManager v-model="userForm.permissions" />
+            </div>
+            <v-text-field v-model="userForm.firstName" label="First Name"
+              :rules="[v => !!v || 'First name is required']" class="text-body-1" />
+            <v-text-field v-model="userForm.lastName" label="Last Name" :rules="[v => !!v || 'Last name is required']"
+              class="text-body-1" />
+            <v-text-field v-model.number="userForm.telephone" label="Telephone" type="number" :rules="[
+              v => !!v || 'Telephone is required',
+              v => /^\d{10}$/.test(String(v)) || 'Telephone must be 10 digits'
+            ]" class="text-body-1" />
+            <v-text-field v-model="userForm.email" label="Email" :rules="[
+              v => !!v || 'Email is required',
+              v => /.+@.+\..+/.test(v) || 'Email must be valid'
+            ]" class="text-body-1" />
+            <v-text-field v-model="userForm.password" label="Password" :rules="[
+              v => !!v || 'Password is required',
+              v => v.length >= 6 || 'Password must be at least 6 characters'
+            ]" :type="editingUser ? 'text' : 'password'" class="text-body-1" />
+            <v-select v-model="userForm.roleIds" :items="roles" item-text="title" item-value="id" label="Roles" multiple
+              :rules="[v => v && v.length > 0 || 'At least one role is required']" class="text-body-1" />
+            <v-select v-model="userForm.typeDocumentId" :items="typeDocuments" item-text="title" item-value="id"
+              label="Document Type" :rules="[v => !!v || 'Document type is required']" class="text-body-1" />
+            <v-text-field v-model="userForm.document" label="Documento" type="number" class="text-body-1" />
+            <v-select v-model="userForm.cityId" :items="cities" item-text="title" item-value="id" label="City"
+              :rules="[v => !!v || 'City is required']" class="text-body-1" />
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -191,6 +119,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed, watch } from 'vue';
+import PermissionManager from '@/components/PermissionsManager.vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
 
@@ -223,17 +152,18 @@ interface User {
   city?: City;
   roles: Role[];
   roleIds: number[];
+  permissions?: Record<string, boolean>;
 }
 
 const headers = [
-  { title: 'First Name', key: 'firstName' , sortable: false },
-  { title: 'Last Name', key: 'lastName' , sortable: false },
-  { title: 'Email', key: 'email' , sortable: false },
-  { title: 'Telephone', key: 'telephone' , sortable: false },
-  { title: 'Document Type', key: 'typeDocument' , sortable: false },
-  { title: 'Document', key: 'document' , sortable: false },
+  { title: 'First Name', key: 'firstName', sortable: false },
+  { title: 'Last Name', key: 'lastName', sortable: false },
+  { title: 'Email', key: 'email', sortable: false },
+  { title: 'Telephone', key: 'telephone', sortable: false },
+  { title: 'Document Type', key: 'typeDocument', sortable: false },
+  { title: 'Document', key: 'document', sortable: false },
   { title: 'Roles', key: 'roles', sortable: false },
-  { title: 'City', key: 'city' , sortable: false },
+  { title: 'City', key: 'city', sortable: false },
   { title: 'Actions', key: 'actions', sortable: false },
 ];
 
@@ -270,6 +200,7 @@ const emptyUserForm: User = {
   cityId: '',
   roles: [],
   roleIds: [],
+  permissions: {},
 };
 
 const userForm = ref<User>({ ...emptyUserForm });
@@ -442,4 +373,3 @@ onMounted(() => {
   fetchData();
 });
 </script>
-

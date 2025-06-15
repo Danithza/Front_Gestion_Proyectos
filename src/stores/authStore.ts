@@ -12,6 +12,9 @@ export const useAuthStore = defineStore('auth', {
     getUser: (state) => state.user,
     getToken: (state) => state.token,
     isLoggedIn: (state) => state.isAuthenticated,
+    hasPermission: (state) => (permission: string) => {
+      return !!state.user.allowedPermissions[permission];
+    },
   },
   actions: {
     async login(credentials: { email: string; password: string }) {
