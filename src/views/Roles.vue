@@ -7,12 +7,7 @@
         <p class="text-caption text-medium-emphasis">Administra los roles y permisos disponibles en la plataforma</p>
       </v-col>
       <v-col cols="12" md="6" class="text-md-right">
-        <v-btn
-          color="primary"
-          size="large"
-          @click="openCreateModal"
-          class="shadow-lg"
-        >
+        <v-btn color="primary" size="large" @click="openCreateModal" class="shadow-lg">
           <v-icon left>mdi-plus-circle-outline</v-icon> Nuevo Rol
         </v-btn>
       </v-col>
@@ -27,49 +22,13 @@
             Filtros
           </h3>
 
-          <v-autocomplete
-            v-model="filters.title"
-            :items="uniqueTitles"
-            label="Filtrar por Título"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-format-title"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
+          <v-autocomplete v-model="filters.title" :items="uniqueTitles" label="Filtrar por Título" clearable outlined
+            dense prepend-inner-icon="mdi-format-title" hide-no-data @click:clear="resetFilters" class="mb-4" />
 
-          <v-autocomplete
-            v-model="filters.permissions"
-            :items="uniquePermissions"
-            label="Filtrar por Permiso"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-shield-account"
-            hide-no-data
-            @click:clear="resetFilters"
-            class="mb-4"
-          />
+          <v-text-field v-model="filters.search" label="Buscar rol" clearable outlined dense
+            prepend-inner-icon="mdi-magnify" @click:clear="resetFilters" />
 
-          <v-text-field
-            v-model="filters.search"
-            label="Buscar rol"
-            clearable
-            outlined
-            dense
-            prepend-inner-icon="mdi-magnify"
-            @click:clear="resetFilters"
-          />
-
-          <v-btn
-            block
-            color="secondary"
-            variant="outlined"
-            class="mt-2"
-            @click="resetFilters"
-          >
+          <v-btn block color="secondary" variant="outlined" class="mt-2" @click="resetFilters">
             Limpiar filtros
           </v-btn>
         </v-card>
@@ -78,13 +37,8 @@
       <!-- Tarjetas de Roles -->
       <v-col cols="12" md="9">
         <transition-group name="list" tag="div" class="d-flex flex-wrap" style="gap: 16px;">
-          <v-card
-            v-for="item in filteredRoles"
-            :key="item.id"
-            class="role-card pa-4 rounded-xl"
-            elevation="2"
-            :style="{ borderLeft: '4px solid ' + getRandomColor() }"
-          >
+          <v-card v-for="item in filteredRoles" :key="item.id" class="role-card pa-4 rounded-xl" elevation="2"
+            :style="{ borderLeft: '4px solid ' + getRandomColor() }">
             <div class="d-flex justify-space-between align-center mb-2">
               <div class="d-flex align-center">
                 <v-avatar size="40" color="black" class="mr-3">
@@ -96,24 +50,10 @@
                 </div>
               </div>
               <div class="d-flex align-center" style="gap: 8px;">
-                <v-btn
-                  icon
-                  variant="text"
-                  color="blue"
-                  size="small"
-                  @click="editRole(item)"
-                  title="Editar"
-                >
+                <v-btn icon variant="text" color="blue" size="small" @click="editRole(item)" title="Editar">
                   <v-icon>mdi-pencil-box-multiple-outline</v-icon>
                 </v-btn>
-                <v-btn
-                  icon
-                  variant="text"
-                  color="red"
-                  size="small"
-                  @click="confirmDelete(item.id)"
-                  title="Eliminar"
-                >
+                <v-btn icon variant="text" color="red" size="small" @click="confirmDelete(item.id)" title="Eliminar">
                   <v-icon>mdi-delete-alert-outline</v-icon>
                 </v-btn>
               </div>
@@ -125,49 +65,21 @@
               <span class="text-subtitle-2 font-weight-bold">Descripción:</span>
               <p class="text-body-2">{{ item.description }}</p>
             </div>
-
-            <div>
-              <span class="text-subtitle-2 font-weight-bold">Permisos:</span>
-              <v-chip
-                v-for="(permission, index) in item.permissions.split(',')"
-                :key="index"
-                small
-                color="secondary"
-                class="mr-1 mb-1"
-              >
-                {{ permission.trim() }}
-              </v-chip>
-            </div>
           </v-card>
         </transition-group>
 
         <!-- Mensaje cuando no hay resultados con filtros -->
-        <v-alert
-          v-if="filteredRoles.length === 0 && hasActiveFilters"
-          type="info"
-          variant="tonal"
-          class="mt-4"
-        >
+        <v-alert v-if="filteredRoles.length === 0 && hasActiveFilters" type="info" variant="tonal" class="mt-4">
           No se encontraron roles con los filtros aplicados
         </v-alert>
 
         <!-- Mensaje cuando no hay datos -->
-        <v-alert
-          v-if="roles.length === 0 && !loading"
-          type="info"
-          variant="tonal"
-          class="mt-4"
-        >
+        <v-alert v-if="roles.length === 0 && !loading" type="info" variant="tonal" class="mt-4">
           No hay roles registrados
         </v-alert>
 
         <!-- Cargando datos -->
-        <v-progress-circular
-          v-if="loading"
-          indeterminate
-          color="primary"
-          class="mt-4"
-        ></v-progress-circular>
+        <v-progress-circular v-if="loading" indeterminate color="primary" class="mt-4"></v-progress-circular>
       </v-col>
     </v-row>
 
@@ -187,42 +99,17 @@
 
         <v-card-text class="pa-6">
           <v-form ref="form" lazy-validation>
-            <v-text-field
-              v-model="roleForm.title"
-              label="Nombre del rol"
-              outlined
-              :rules="titleRules"
-              @input="normalizeRoleName"
-              class="mb-4"
-            />
+            <div class="text-right mb-6">
+              <PermissionManager v-model="roleForm.permissions" />
+            </div>
+            <v-text-field v-model="roleForm.title" label="Nombre del rol" outlined :rules="titleRules"
+              @input="normalizeRoleName" class="mb-4" />
 
-            <v-textarea
-              v-model="roleForm.description"
-              label="Descripción"
-              outlined
-              :rules="descriptionRules"
-              class="mb-4"
-            />
+            <v-textarea v-model="roleForm.description" label="Descripción" outlined :rules="descriptionRules"
+              class="mb-4" />
 
-            <v-textarea
-              v-model="roleForm.permissions"
-              label="Permisos (separados por comas)"
-              outlined
-              :rules="permissionsRules"
-              hint="Ejemplo: crear_usuario,editar_usuario,eliminar_usuario"
-              persistent-hint
-            />
-
-            <v-alert
-              v-if="hasDuplicate"
-              type="error"
-              variant="tonal"
-              class="mb-4"
-              border="start"
-              border-color="error"
-              density="compact"
-              icon="mdi-alert-circle-outline"
-            >
+            <v-alert v-if="hasDuplicate" type="error" variant="tonal" class="mb-4" border="start" border-color="error"
+              density="compact" icon="mdi-alert-circle-outline">
               <strong>Error:</strong> Este rol ya existe (incluyendo variaciones con tildes o espacios)
             </v-alert>
           </v-form>
@@ -230,21 +117,11 @@
 
         <v-card-actions class="pa-4 bg-grey-lighten-4">
           <v-spacer></v-spacer>
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="closeModal"
-            :disabled="isSaving"
-          >
+          <v-btn color="grey" variant="text" @click="closeModal" :disabled="isSaving">
             Cancelar
           </v-btn>
-          <v-btn
-            color="primary"
-            :loading="isSaving"
-            :disabled="isSaving || hasDuplicate"
-            @click="saveRole"
-            variant="elevated"
-          >
+          <v-btn color="primary" :loading="isSaving" :disabled="isSaving || hasDuplicate" @click="saveRole"
+            variant="elevated">
             {{ editingRole ? 'Actualizar' : 'Crear' }}
           </v-btn>
         </v-card-actions>
@@ -271,18 +148,10 @@
 
         <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="confirmDeleteDialog = false"
-          >
+          <v-btn color="grey" variant="text" @click="confirmDeleteDialog = false">
             Cancelar
           </v-btn>
-          <v-btn
-            color="red"
-            variant="elevated"
-            @click="deleteConfirmed"
-          >
+          <v-btn color="red" variant="elevated" @click="deleteConfirmed">
             <v-icon left>mdi-delete</v-icon>
             Eliminar
           </v-btn>
@@ -307,6 +176,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import PermissionManager from '@/components/PermissionsManager.vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
 
@@ -314,7 +184,7 @@ interface Role {
   id: number;
   title: string;
   description: string;
-  permissions: string;
+  permissions?: Record<string, boolean>;
 }
 
 const roles = ref<Role[]>([]);
@@ -324,7 +194,7 @@ const editingRole = ref<Role | null>(null);
 const roleForm = ref<Omit<Role, 'id'> & { id?: number }>({
   title: '',
   description: '',
-  permissions: ''
+  permissions: {},
 });
 
 const snackbar = ref(false);
@@ -361,13 +231,6 @@ const uniqueTitles = computed(() => {
   return Array.from(new Set(roles.value.map(r => r.title))).sort();
 });
 
-const uniquePermissions = computed(() => {
-  const allPermissions = roles.value.flatMap(r =>
-    r.permissions.split(',').map(p => p.trim())
-  );
-  return Array.from(new Set(allPermissions)).filter(p => p).sort();
-});
-
 const filteredRoles = computed(() => {
   // Si no hay filtros activos, mostrar todos los roles
   if (!hasActiveFilters.value) {
@@ -380,17 +243,13 @@ const filteredRoles = computed(() => {
 
   return roles.value.filter(role => {
     const roleTitle = role.title.toLowerCase();
-    const rolePermissions = role.permissions.toLowerCase();
     const roleDescription = role.description.toLowerCase();
 
     const matchesTitle = titleFilter ? roleTitle.includes(titleFilter) : true;
-    const matchesPermissions = permissionsFilter ? rolePermissions.includes(permissionsFilter) : true;
     const matchesSearch = searchFilter ?
-      (roleTitle.includes(searchFilter) ||
-       roleDescription.includes(searchFilter) ||
-       rolePermissions.includes(searchFilter)) : true;
+      (roleTitle.includes(searchFilter) || roleDescription.includes(searchFilter)) : true;
 
-    return matchesTitle && matchesPermissions && matchesSearch;
+    return matchesTitle && matchesSearch;
   });
 });
 
@@ -453,7 +312,7 @@ const validateDuplicateTitle = (v: string) => {
   const exists = roles.value.some(r => {
     const normalizedExisting = normalizeForComparison(r.title);
     return normalizedExisting === normalizedInput &&
-           (!editingRole.value || r.id !== editingRole.value.id);
+      (!editingRole.value || r.id !== editingRole.value.id);
   });
 
   hasDuplicate.value = exists;
@@ -475,7 +334,7 @@ const fetchRoles = async () => {
 
 const openCreateModal = () => {
   editingRole.value = null;
-  roleForm.value = { title: '', description: '', permissions: '' };
+  roleForm.value = { title: '', description: '' };
   hasDuplicate.value = false;
   dialog.value = true;
 };
@@ -561,13 +420,14 @@ onMounted(fetchRoles);
 
 .role-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
 }
 
 .list-enter-active,
 .list-leave-active {
   transition: all 0.5s ease;
 }
+
 .list-enter-from,
 .list-leave-to {
   opacity: 0;

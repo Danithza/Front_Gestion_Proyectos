@@ -1,6 +1,8 @@
 export default {
     baseUrl: 'http://localhost:3333',
     api: {
+        //app Permissions
+        appPermissions: '/app/permissions',
         // Auth Routes
         login: '/auth/login',
         // User Routes
