@@ -50,5 +50,18 @@ export const useAuthStore = defineStore('auth', {
       // Clear the token in the baseService
       service.setToken(null);
     },
+    async me() {
+      try {
+        // Call the login endpoint using the baseService
+        const response = await service.get(CONFIG.api.me)
+        if (response) {
+          this.user = response
+          localStorage.setItem('user', JSON.stringify(this.user))
+        }
+      } catch (error) {
+        console.error('Login failed:', error)
+        throw error // Re-throw the error to handle it in the component
+      }
+    },
   },
-});
+})

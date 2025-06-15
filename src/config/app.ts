@@ -5,6 +5,8 @@ export default {
         appPermissions: '/app/permissions',
         // Auth Routes
         login: '/auth/login',
+        // Auth Me
+        me: '/auth/me',
         // User Routes
         users: '/users',
         // Role Routes
