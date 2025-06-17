@@ -39,24 +39,28 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     logout() {
-      this.user = null;
-      this.token = null;
-      this.isAuthenticated = false;
+        this.user = null;
+        this.token = null;
+        this.isAuthenticated = false;
 
-      // Clear the token and user from localStorage
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
+        // Clear the token and user from localStorage
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
 
-      // Clear the token in the baseService
-      service.setToken(null);
+        // Clear the token in the baseService
+        service.setToken(null);
     },
     async me() {
       try {
-        // Call the login endpoint using the baseService
-        const response = await service.get(CONFIG.api.me)
-        if (response) {
-          this.user = response
-          localStorage.setItem('user', JSON.stringify(this.user))
+        if(this.isAuthenticated)
+        {
+          // Call the login endpoint using the baseService
+          const response = await service.get(CONFIG.api.me)
+          if (response)
+          {
+            this.user = response
+            localStorage.setItem('user', JSON.stringify(this.user))
+          }
         }
       } catch (error) {
         console.error('Login failed:', error)

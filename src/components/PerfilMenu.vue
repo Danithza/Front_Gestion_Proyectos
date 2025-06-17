@@ -17,8 +17,6 @@
         <v-list-item-title>Cambiar contraseña</v-list-item-title>
       </v-list-item>
 
-    
-
       <v-divider></v-divider>
 
       <v-list-item @click="mostrarAlertaCerrarSesion" class="logout-item">
@@ -31,6 +29,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
+
+const authStore = useAuthStore()
 
 const router = useRouter()
 const menu = ref(false)
@@ -41,16 +42,9 @@ const usernameInitial = computed(() => username.charAt(0).toUpperCase())
 function mostrarAlertaCerrarSesion() {
   const confirmar = window.confirm('¿Estás seguro de que deseas cerrar sesión?')
   if (confirmar) {
-    cerrarSesion()
+    authStore.logout()
+    router.push('/')
   }
-}
-
-function cerrarSesion() {
-  menu.value = false
-  localStorage.removeItem('token')
-  localStorage.removeItem('username')
-  sessionStorage.clear()
-  router.push('/')
 }
 
 function goToPerfil() {
