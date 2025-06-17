@@ -1,21 +1,28 @@
 <template>
-  <v-card class="mx-auto my-10 pa-6" elevation="3" max-width="600" rounded="xl">
-    <!-- Avatar y datos principales -->
+  <v-card class="mx-auto my-10 pa-6 perfil-card" elevation="3" max-width="600" rounded="xl">
+    <!-- Avatar e ícono principal -->
     <v-row class="text-center mb-4" justify="center">
-      <v-avatar size="120">
-        <v-img src="https://cdn-icons-png.flaticon.com/512/25/25231.png" />
+      <v-avatar size="120" color="white">
+        <v-icon size="96" color="blue-darken-2">mdi-account-circle-outline</v-icon>
       </v-avatar>
     </v-row>
 
-    <v-row justify="center" class="text-center">
+    <!-- Cabecera con nombre, rol y fecha -->
+    <v-row justify="center" class="text-center mb-2 white--text">
       <div v-if="user">
         <h2 class="text-h5 font-weight-bold mb-1">
           {{ user.firstName }} {{ user.lastName }}
         </h2>
-        <p class="text-body-2 grey--text">
-          {{ user.rol }} • Registrado el {{ user.fechaRegistro }}
+
+        <p class="text-caption text-white font-weight-medium mb-0">
+          <span v-if="user.rol">{{ user.rol }}</span>
         </p>
-        <p class="text-body-2 mt-2">{{ user.descripcion }}</p>
+
+        <p class="text-caption text-white font-italic">
+          <span v-if="user.fechaRegistro">Registrado el {{ user.fechaRegistro }}</span>
+        </p>
+
+        <p class="text-body-2 mt-2 text-white" v-if="user.descripcion">{{ user.descripcion }}</p>
       </div>
     </v-row>
 
@@ -45,7 +52,7 @@
 
       <v-col cols="12" md="6">
         <v-text-field
-          :model-value="typeDocumentName"
+          :model-value="typeDocumentTitle"
           label="Tipo de Documento"
           variant="outlined"
           readonly
@@ -85,7 +92,7 @@
 
       <v-col cols="12" md="6">
         <v-text-field
-          :model-value="cityName"
+          :model-value="cityTitle"
           label="Ciudad"
           variant="outlined"
           readonly
@@ -96,55 +103,73 @@
   </v-card>
 </template>
 
-<script lang="ts" setup>
-defineOptions({ name: 'UserPerfil' });
+<script setup lang="ts">
+defineOptions({ name: 'UserPerfil' })
 
-import { computed, type Ref } from 'vue';
-import { storeToRefs } from 'pinia';
-import { useAuthStore } from '@/stores/authStore';
+import { ref, computed, onMounted, type Ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/authStore'
 
-// Tipo User local
 interface User {
-  firstName: string;
-  lastName: string;
-  rol: string;
-  fechaRegistro: string;
-  descripcion: string;
-  typeDocumentId: number;
-  cityId: number;
-  document: string;
-  email: string;
-  telephone: string;
+  id: number
+  firstName: string
+  lastName: string
+  rol?: string
+  fechaRegistro?: string
+  descripcion?: string
+  typeDocumentId?: number
+  cityId?: number
+  document?: string
+  email?: string
+  telephone?: string
 }
 
-const authStore = useAuthStore();
-const { user } = storeToRefs(authStore) as unknown as { user: Ref<User> };
+interface City {
+  id: number
+  title: string
+}
 
-// Catálogo manual de tipo de documento
-const typeDocumentCatalog = [
-  { id: 1, nombre: 'Cédula de Ciudadanía' },
-  { id: 2, nombre: 'Tarjeta de Identidad' },
-  { id: 3, nombre: 'Pasaporte' },
-];
+interface TypeDocument {
+  id: number
+  title: string
+}
 
-// Catálogo manual de ciudades
-const cityCatalog = [
-  { id: 1, nombre: 'Bogotá' },
-  { id: 2, nombre: 'Medellín' },
-  { id: 3, nombre: 'Cali' },
-];
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore) as unknown as { user: Ref<User> }
 
-const typeDocumentName = computed(() =>
-  typeDocumentCatalog.find(t => t.id === user.value?.typeDocumentId)?.nombre || 'Desconocido'
-);
+const typeDocuments = ref<TypeDocument[]>([])
+const cities = ref<City[]>([])
 
-const cityName = computed(() =>
-  cityCatalog.find(c => c.id === user.value?.cityId)?.nombre || 'Desconocida'
-);
+const typeDocumentTitle = computed(() => {
+  return typeDocuments.value.find(t => t.id === user.value?.typeDocumentId)?.title || '...'
+})
+
+const cityTitle = computed(() => {
+  return cities.value.find(c => c.id === user.value?.cityId)?.title || '...'
+})
+
+const fetchCatalogs = async () => {
+  const [docRes, cityRes] = await Promise.all([
+    fetch('http://localhost:3333/api/types_documents'),
+    fetch('http://localhost:3333/api/cities'),
+  ])
+
+  if (!docRes.ok || !cityRes.ok) throw new Error('Error al cargar catálogos')
+
+  typeDocuments.value = await docRes.json()
+  cities.value = await cityRes.json()
+}
+
+onMounted(fetchCatalogs)
 </script>
 
 <style scoped>
 .text-center {
   text-align: center;
+}
+
+.perfil-card {
+  background: linear-gradient(to bottom right, #e3f2fd, #ffffff); /* azul claro degradado */
+  border: 1px solid #c5cae9;
 }
 </style>
