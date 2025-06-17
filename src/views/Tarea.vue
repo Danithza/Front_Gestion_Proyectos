@@ -1,60 +1,215 @@
 <template>
-  <v-container fluid>
+  <v-container fluid class="tasks-container">
     <v-row class="mb-4">
       <v-col cols="12" class="d-flex justify-space-between align-center">
-        <h2 class="text-h5 font-weight-bold">Gestión de Tareas</h2>
-        <AgregarTareaDialog @tarea-creada="agregarTarea" />
+        <h2 class="text-h5 font-weight-bold text-indigo-darken-3">Gestión de Tareas</h2>
+        <v-btn color="indigo-darken-3" prepend-icon="mdi-plus" @click="abrirModalNuevaTarea" variant="elevated">
+          Nueva Tarea
+        </v-btn>
       </v-col>
     </v-row>
 
-    <!-- Columnas estilo Trello -->
-    <div class="d-flex justify-space-between align-start flex-wrap">
-      <div v-for="estado in estados" :key="estado.id" class="columna-trello" @drop="onDrop($event, estado.id)"
-        @dragover.prevent>
-        <h3 class="titulo-columna">{{ estado.title }}</h3>
+    <div class="kanban-board">
+      <div
+        v-for="estado in estados"
+        :key="estado.id"
+        class="kanban-column"
+        @drop="onDrop($event, estado.id)"
+        @dragover.prevent
+      >
+        <div class="column-header" style="background-color: #2196F3">
+          <h3 class="column-title">{{ estado.title }}</h3>
+          <v-chip variant="flat" color="white" class="task-count">
+            {{ tareasPorEstado(estado.id).length }}
+          </v-chip>
+        </div>
 
-        <transition-group name="fade" tag="div">
-          <v-card v-for="tarea in tareasPorEstado(estado.id)" :key="tarea.id" class="mb-3 tarea-card" draggable="true"
-            @dragstart="onDragStart($event, tarea.id)" @click="abrirEditor(tarea)"
-            :style="{ backgroundColor: coloresEstado[estado.title] || '#fff', borderLeftColor: coloresEstado[estado.title] || '#00796b' }">
-            <v-card-title class="justify-space-between">
-              <span>{{ tarea.title }}</span>
-              <v-chip size="small" :color="colorPrioridad(tarea.prioridad)" text-color="white">
-                {{ tarea.prioridad }}
-              </v-chip>
-            </v-card-title>
-            <v-card-subtitle class="text-body-2">
-              {{ tarea.descripcion }}
-            </v-card-subtitle>
-            <v-card-text class="text-caption">👤 {{ tarea.encargado }}</v-card-text>
-          </v-card>
-        </transition-group>
+        <div class="tasks-scroll-container">
+          <transition-group name="list" tag="div">
+            <v-card
+              v-for="tarea in tareasPorEstado(estado.id)"
+              :key="tarea.id"
+              class="task-card"
+              draggable="true"
+              @dragstart="onDragStart($event, tarea.id)"
+              @click="editarTarea(tarea)"
+              :style="{ backgroundColor: getStatusCardColor(estado.title) }"
+            >
+              <v-card-title class="d-flex justify-space-between align-start task-title">
+                <span class="text-body-1 font-weight-medium">{{ tarea.title }}</span>
+                <v-chip
+                  size="small"
+                  :color="getPriorityColor(tarea.priorityId)"
+                  class="ml-2"
+                  text-color="white"
+                >
+                  {{ obtenerNombrePrioridad(tarea.priorityId) }}
+                </v-chip>
+              </v-card-title>
+              <v-card-text class="task-content">
+                <div class="text-caption task-description">{{ tarea.description }}</div>
+                <div class="task-meta">
+                  <div class="d-flex align-center mt-2">
+                    <v-avatar size="24" :color="getUserColor(tarea.userId)" class="mr-2">
+                      <span class="text-caption text-white">{{ getUserInitials(tarea.userId) }}</span>
+                    </v-avatar>
+                    <span class="text-caption">{{ obtenerNombreUsuario(tarea.userId) }}</span>
+                  </div>
+                  <div class="d-flex align-center mt-1">
+                    <v-icon size="small" class="mr-1">mdi-calendar</v-icon>
+                    <span class="text-caption" :class="{ 'text-red-darken-2': isOverdue(tarea.dueDate) }">
+                      {{ formatearFecha(tarea.dueDate) }}
+                      <span v-if="isOverdue(tarea.dueDate)" class="text-caption font-weight-bold">(Atrasada)</span>
+                    </span>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </transition-group>
+        </div>
       </div>
     </div>
 
-    <!-- Diálogo para editar -->
-    <v-dialog v-model="dialog" max-width="500">
-      <v-card>
-        <v-card-title class="d-flex justify-space-between">
-          Editar Tarea
-          <v-btn icon @click="dialog = false">
+    <!-- Modal para crear/editar tarea -->
+    <v-dialog v-model="dialog" max-width="600px" persistent>
+      <v-card class="rounded-xl">
+        <v-toolbar :color="editando ? 'blue-darken-2' : 'indigo-darken-3'" density="compact">
+          <v-toolbar-title class="text-white">
+            <v-icon left>{{ editando ? 'mdi-pencil' : 'mdi-plus' }}</v-icon>
+            {{ editando ? 'Editar Tarea' : 'Crear Tarea' }}
+          </v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="cerrarModal" variant="text" color="white">
             <v-icon>mdi-close</v-icon>
           </v-btn>
-        </v-card-title>
-        <v-card-text>
-          <v-text-field v-model="tareaEditando.title" label="Título" />
-          <v-textarea v-model="tareaEditando.descripcion" label="Descripción" />
-          <v-text-field v-model="tareaEditando.encargado" label="Encargado" />
-          <v-select v-model="tareaEditando.prioridad" :items="['Alta', 'Media', 'Baja']" label="Prioridad" />
+        </v-toolbar>
+
+        <v-card-text class="pa-6">
+          <v-text-field
+            v-model="tareaForm.title"
+            label="Título"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+          />
+          <v-textarea
+            v-model="tareaForm.description"
+            label="Descripción"
+            class="mb-4"
+            variant="outlined"
+            rows="3"
+            auto-grow
+            color="indigo-darken-3"
+          />
+          <v-select
+            v-model="tareaForm.userId"
+            :items="usuarios"
+            item-value="id"
+            item-title="name"
+            label="Encargado"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+            :menu-props="{ maxHeight: 200 }"
+          />
+          <v-select
+            v-model="tareaForm.priorityId"
+            :items="prioridades"
+            item-value="id"
+            item-title="title"
+            label="Prioridad"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+            :menu-props="{ maxHeight: 200 }"
+          />
+          <v-select
+            v-model="tareaForm.projectId"
+            :items="proyectos"
+            item-value="id"
+            item-title="title"
+            label="Proyecto"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+            :menu-props="{ maxHeight: 200 }"
+          />
+          <v-select
+            v-model="tareaForm.statusId"
+            :items="estados"
+            item-value="id"
+            item-title="title"
+            label="Estado"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+            :menu-props="{ maxHeight: 200 }"
+          />
+          <v-text-field
+            v-model="tareaForm.dueDate"
+            label="Fecha límite"
+            type="date"
+            variant="outlined"
+            :rules="[required]"
+            :min="new Date().toISOString().split('T')[0]"
+            color="indigo-darken-3"
+          />
         </v-card-text>
-        <v-card-actions>
-          <v-btn color="error" @click="eliminarTarea(tareaEditando.id)">
+
+        <v-card-actions class="pa-4 bg-indigo-lighten-5">
+          <v-spacer></v-spacer>
+          <v-btn
+            v-if="editando"
+            color="red-darken-2"
+            variant="tonal"
+            @click="confirmarEliminar"
+            prepend-icon="mdi-delete"
+          >
             Eliminar
           </v-btn>
-          <v-spacer />
-          <v-btn color="primary" @click="guardarCambios">
-            Guardar
+          <v-btn
+            color="indigo-darken-3"
+            @click="guardarTarea"
+            variant="elevated"
+            :prepend-icon="editando ? 'mdi-content-save' : 'mdi-plus'"
+          >
+            {{ editando ? 'Actualizar' : 'Crear' }}
           </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Snackbar para notificaciones -->
+    <v-snackbar
+      v-model="snackbar.show"
+      :timeout="3000"
+      :color="snackbar.color"
+      location="bottom right"
+      rounded="pill"
+    >
+      <div class="d-flex align-center">
+        <v-icon class="mr-2">{{ snackbar.icon }}</v-icon>
+        {{ snackbar.message }}
+      </div>
+    </v-snackbar>
+
+    <!-- Dialogo de confirmación para eliminar -->
+    <v-dialog v-model="confirmDialog" max-width="400px">
+      <v-card class="rounded-lg">
+        <v-card-title class="text-h6">Confirmar Eliminación</v-card-title>
+        <v-card-text>
+          ¿Estás seguro que deseas eliminar la tarea "<strong>{{ tareaForm.title }}</strong>"?
+          Esta acción no se puede deshacer.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey-darken-1" variant="text" @click="confirmDialog = false">Cancelar</v-btn>
+          <v-btn color="red-darken-2" variant="elevated" @click="eliminarTarea">Eliminar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -62,158 +217,340 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import AgregarTareaDialog from '@/components/AgregarTarea.vue'
+import { ref, onMounted } from 'vue'
 import service from '@/services/baseService'
 
 interface Tarea {
   id: number
   title: string
-  descripcion: string
-  encargado: string
-  statusId: number
-  prioridad: string
+  description: string
+  userId: number | null
+  statusId: number | null
+  priorityId: number | null
+  dueDate: string
+  projectId: number | null
 }
 
-interface Estado {
-  id: number
-  title: string
-  color?: string
-}
+interface Estado { id: number; title: string }
+interface Usuario { id: number; firstName: string; lastName: string; name?: string }
+interface Prioridad { id: number; title: string; type: string }
+interface Proyecto { id: number; title: string }
 
 const tareas = ref<Tarea[]>([])
 const estados = ref<Estado[]>([])
+const usuarios = ref<Usuario[]>([])
+const prioridades = ref<Prioridad[]>([])
+const proyectos = ref<Proyecto[]>([])
 
-const coloresEstado: Record<string, string> = {}
+const dialog = ref(false)
+const editando = ref(false)
+const confirmDialog = ref(false)
 
-async function cargarTareas() {
+const snackbar = ref({
+  show: false,
+  message: '',
+  color: 'success',
+  icon: 'mdi-check'
+})
+
+const tareaForm = ref<Tarea>({
+  id: 0,
+  title: '',
+  description: '',
+  userId: null,
+  statusId: null,
+  priorityId: null,
+  dueDate: new Date().toISOString().split('T')[0],
+  projectId: null
+})
+
+const userColors = [
+  '#2196F3', // Azul
+  '#009688', // Verde agua
+  '#3F51B5', // Índigo
+  '#00BCD4', // Cyan
+  '#8BC34A'  // Verde lima
+]
+
+async function cargarDatos() {
   try {
-    const data = await service.index<Tarea[]>('/tasks')
-    tareas.value = data
-  } catch (e) {
+    const [tasks, users, prios, stats, proys] = await Promise.all([
+      service.index<Tarea[]>('/tasks'),
+      service.index<Usuario[]>('/users'),
+      service.index<Prioridad[]>('/priorities'),
+      service.index<Estado[]>('/statuses', { type: 'task' }),
+      service.index<Proyecto[]>('/projects')
+    ])
+
+    tareas.value = tasks
+    usuarios.value = users.map(u => ({ ...u, name: `${u.firstName} ${u.lastName}` }))
+    prioridades.value = prios.filter(p => p.type === 'task')
+    estados.value = stats
+    proyectos.value = proys
+  } catch {
     tareas.value = []
   }
 }
 
-onMounted(async () => {
-  // Obtener tareas desde el API
-  await cargarTareas()
-
-  // Obtener estados desde el API usando baseService
-  try {
-    const data = await service.index<Estado[]>('/statuses', { type: 'task' })
-    estados.value = data
-    data.forEach((estado: Estado) => {
-      if (estado.color) coloresEstado[estado.title] = estado.color
-    })
-  } catch (e) {
-    estados.value = []
-  }
-})
-
-watch(tareas, (nuevas) => {
-  // Si quieres guardar localmente, descomenta:
-  // localStorage.setItem('tareas', JSON.stringify(nuevas))
-}, { deep: true })
-
-function tareasPorEstado(estadoNombre: number): Tarea[] {
+onMounted(cargarDatos)
+function tareasPorEstado(id: number) {
   return tareas.value
-    .filter((t) => t.statusId === estadoNombre)
-    .sort((a, b) => prioridadOrden(b.prioridad) - prioridadOrden(a.prioridad))
+    .filter(t => t.statusId === id)
+    .sort((a, b) => {
+      // Manejar casos donde priorityId podría ser null
+      const aPriority = a.priorityId || 0
+      const bPriority = b.priorityId || 0
+      return aPriority - bPriority
+    })
 }
 
-function prioridadOrden(prio: string): number {
-  return prio === 'Alta' ? 3 : prio === 'Media' ? 2 : 1
+function formatearFecha(fecha: string) {
+  if (!fecha) return ''
+  const [anio, mes, dia] = fecha.split('T')[0].split('-')
+  return `${dia}/${mes}/${anio}`
 }
 
-function colorPrioridad(prio: string): string {
-  return prio === 'Alta' ? 'red' : prio === 'Media' ? 'orange' : 'green'
+function obtenerNombreUsuario(id: number | null): string {
+  if (!id) return 'Sin asignar'
+  const user = usuarios.value.find(u => u.id === id)
+  return user ? `${user.firstName} ${user.lastName}` : `Usuario ${id}`
 }
 
-function onDragStart(event: DragEvent, id: number) {
-  event.dataTransfer?.setData('text/plain', id.toString())
+function getUserInitials(id: number | null): string {
+  if (!id) return '?'
+  const user = usuarios.value.find(u => u.id === id)
+  if (!user) return '?'
+  return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
 }
 
-function onDrop(event: DragEvent, nuevoEstado: number) {
-  const id = parseInt(event.dataTransfer?.getData('text/plain') || '')
-  const tarea = tareas.value.find((t) => t.id === id)
+function getUserColor(id: number | null): string {
+  if (!id) return '#9E9E9E' // Gris para usuarios no asignados
+  return userColors[id % userColors.length]
+}
+
+function obtenerNombrePrioridad(id: number | null): string {
+  if (!id) return 'Sin prioridad'
+  return prioridades.value.find(p => p.id === id)?.title || `Prioridad ${id}`
+}
+function getPriorityColor(priorityId: number | null): string {
+  if (!priorityId) return '#9E9E9E' // Gris para prioridad no asignada
+
+  const priorityColors: Record<number, string> = {
+    1: '#F44336', // Urgente - Rojo
+    2: '#FF9800', // Alta - Naranja
+    3: '#FFC107', // Media - Amarillo
+    4: '#4CAF50'  // Baja - Verde
+  }
+  return priorityColors[priorityId] || '#9E9E9E'
+}
+
+function getStatusCardColor(statusTitle: string) {
+  return '#FFFFFF' // Blanco puro
+}
+
+function isOverdue(dueDate: string) {
+  if (!dueDate) return false
+  const today = new Date().toISOString().split('T')[0]
+  return dueDate < today
+}
+
+function onDragStart(e: DragEvent, id: number) {
+  e.dataTransfer?.setData('text/plain', id.toString())
+}
+
+function onDrop(e: DragEvent, estado: number) {
+  const id = parseInt(e.dataTransfer?.getData('text/plain') || '')
+  const tarea = tareas.value.find(t => t.id === id)
   if (tarea) {
-    tarea.statusId = nuevoEstado
-    service.update<Tarea>(`/tasks`, id, { statusId: nuevoEstado })
-      .catch((error) => console.error('Error al actualizar tarea:', error))
+    tarea.statusId = estado
+    service.update('/tasks', id, { statusId: estado })
+    showSnackbar('success', 'Estado actualizado', 'mdi-check-circle')
   }
 }
 
-const dialog = ref(false)
-const tareaEditando = ref<Tarea>({
-  id: 0,
-  title: '',
-  descripcion: '',
-  encargado: '',
-  statusId: 0,
-  prioridad: 'Media',
-})
-
-function abrirEditor(tarea: Tarea) {
-  tareaEditando.value = { ...tarea }
+function abrirModalNuevaTarea() {
+  tareaForm.value = {
+    id: 0,
+    title: '',
+    description: '',
+    userId: null,
+    statusId: estados.value[0]?.id || null,
+    priorityId: null,
+    dueDate: new Date().toISOString().split('T')[0],
+    projectId: null
+  }
+  editando.value = false
   dialog.value = true
 }
 
-function guardarCambios() {
-  const index = tareas.value.findIndex((t) => t.id === tareaEditando.value.id)
-  if (index !== -1) tareas.value[index] = { ...tareaEditando.value }
+function editarTarea(tarea: Tarea) {
+  tareaForm.value = { ...tarea, dueDate: tarea.dueDate.split('T')[0] }
+  editando.value = true
+  dialog.value = true
+}
+
+function cerrarModal() {
   dialog.value = false
 }
 
-function eliminarTarea(id: number) {
-  tareas.value = tareas.value.filter((t) => t.id !== id)
-  dialog.value = false
+function required(v: any) {
+  return !!v || 'Campo requerido'
 }
 
-function agregarTarea(nueva: Tarea) {
-  tareas.value.push(nueva)
+async function guardarTarea() {
+  // Validar que todos los campos requeridos estén completos
+  if (!tareaForm.value.title ||
+      !tareaForm.value.userId ||
+      !tareaForm.value.priorityId ||
+      !tareaForm.value.projectId ||
+      !tareaForm.value.statusId ||
+      !tareaForm.value.dueDate) {
+    showSnackbar('error', 'Por favor complete todos los campos requeridos', 'mdi-alert-circle')
+    return
+  }
+
+  const data = { ...tareaForm.value }
+
+  try {
+    if (editando.value) {
+      await service.update('/tasks', data.id, data)
+      const idx = tareas.value.findIndex(t => t.id === data.id)
+      if (idx !== -1) tareas.value[idx] = { ...data }
+      showSnackbar('success', 'Tarea actualizada con éxito', 'mdi-check-circle')
+    } else {
+      const nueva = await service.store<Tarea>('/tasks', data)
+      tareas.value.push(nueva)
+      showSnackbar('success', 'Tarea creada con éxito', 'mdi-check-circle')
+    }
+    cerrarModal()
+  } catch (err) {
+    console.error('Error al guardar tarea', err)
+    showSnackbar('error', 'Error al guardar la tarea', 'mdi-alert-circle')
+  }
+}
+
+function confirmarEliminar() {
+  confirmDialog.value = true
+}
+
+async function eliminarTarea() {
+  try {
+    await service.delete('/tasks', tareaForm.value.id.toString())
+    tareas.value = tareas.value.filter(t => t.id !== tareaForm.value.id)
+    confirmDialog.value = false
+    dialog.value = false
+    showSnackbar('success', 'Tarea eliminada con éxito', 'mdi-check-circle')
+  } catch (err) {
+    console.error('Error al eliminar', err)
+    showSnackbar('error', 'No se pudo eliminar la tarea', 'mdi-alert-circle')
+  }
+}
+
+function showSnackbar(color: string, message: string, icon: string) {
+  snackbar.value = {
+    show: true,
+    message,
+    color,
+    icon
+  }
 }
 </script>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
+.tasks-container {
+  padding: 20px;
+  max-width: 100%;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.kanban-board {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 16px;
 }
 
-.columna-trello {
-  flex: 1;
-  min-width: 250px;
-  max-width: 280px;
-  height: 720px;
-  background-color: #e0f2f1;
-  border: 2px solid #80cbc4;
-  border-radius: 12px;
-  padding: 16px;
-  margin: 8px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-  overflow-y: auto;
+.kanban-column {
+  min-width: 300px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
 }
 
-.titulo-columna {
-  color: #004d40;
+.column-header {
+  padding: 12px 16px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.column-title {
+  color: white;
+  font-weight: 500;
+  margin: 0;
+}
+
+.task-count {
   font-weight: bold;
-  margin-bottom: 12px;
-  text-align: center;
-  background-color: #b2dfdb;
-  padding: 8px;
-  border-radius: 8px;
 }
 
-.tarea-card {
-  background-color: #ffffff;
-  border-left: 5px solid #00796b;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+.tasks-scroll-container {
+  padding: 8px;
+  flex-grow: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.task-card {
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: transform 0.2s;
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.task-title {
+  padding: 12px 16px 0;
+}
+
+.task-content {
+  padding: 0 16px 12px;
+}
+
+.task-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-meta {
+  margin-top: 8px;
+}
+
+.list-move, /* apply transition to moving elements */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* ensure leaving items are taken out of layout flow so that moving
+   animations can be calculated correctly. */
+.list-leave-active {
+  position: absolute;
 }
 </style>

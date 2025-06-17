@@ -3,7 +3,7 @@
     <!-- Título y botones -->
     <v-row justify="space-between" align="center" class="mb-6">
       <v-col cols="12" md="6">
-        <h2 class="text-h4 font-weight-bold text-primary">📁 Gestión de Tipos de Documento</h2>
+        <h2 class="text-h4 font-weight-bold text-primary">📁 Tipos de Documento</h2>
         <p class="text-caption text-medium-emphasis">Administra los tipos de documentos del sistema</p>
       </v-col>
       <v-col cols="12" md="6" class="text-md-right">
@@ -19,70 +19,83 @@
     </v-row>
 
     <v-row>
-      <!-- Tarjetas de Documentos SIN FILTROS -->
-      <v-col cols="12">
-        <transition-group name="list" tag="div" class="d-flex flex-wrap" style="gap: 16px;">
-          <v-card
-            v-for="item in typeDocuments"
-            :key="item.id"
-            class="document-card pa-4 rounded-xl"
-            elevation="2"
-            :style="{ borderLeft: '4px solid ' + getRandomColor() }"
+     <!-- Tarjetas de Documentos con diseño uniforme -->
+<v-col cols="12">
+  <transition-group name="list" tag="div" class="d-flex flex-wrap" style="gap: 10px;">
+    <v-card
+      v-for="item in typeDocuments"
+      :key="item.id"
+      class="pa-3 rounded-xl d-flex flex-column justify-space-between"
+      elevation="2"
+      style="width: calc(33.33% - 12px); height: 120px; min-width: 220px; max-width: 100%; overflow: hidden; border-left: 5px solid"
+      :style="{ borderLeftColor: getColorById(item.id) }"
+    >
+      <div class="d-flex align-center mb-2">
+        <v-avatar size="36" color="black" class="mr-3">
+          <v-icon color="white">mdi-file-document-outline</v-icon>
+        </v-avatar>
+        <div class="flex-grow-1 overflow-hidden">
+          <div
+            class="text-subtitle-1 font-weight-bold text-truncate"
+            style="max-width: 100%;"
+            :title="item.abbreviation"
           >
-            <div class="d-flex justify-space-between align-center mb-2">
-              <div class="d-flex align-center">
-                <v-avatar size="40" color="black" class="mr-3">
-                  <v-icon color="white">mdi-file-document-outline</v-icon>
-                </v-avatar>
-                <div>
-                  <span class="text-h6 font-weight-bold d-block">{{ item.title }}</span>
-                  <span class="text-caption text-medium-emphasis">Abreviatura: {{ item.abbreviation }}</span>
-                </div>
-              </div>
-              <div class="d-flex align-center" style="gap: 8px;">
-                <v-btn
-                  icon
-                  variant="text"
-                  color="blue"
-                  size="small"
-                  @click="editTypeDocument(item)"
-                  title="Editar"
-                >
-                  <v-icon>mdi-pencil-box-multiple-outline</v-icon>
-                </v-btn>
-                <v-btn
-                  icon
-                  variant="text"
-                  color="red"
-                  size="small"
-                  @click="confirmDelete(item.id)"
-                  title="Eliminar"
-                >
-                  <v-icon>mdi-delete-alert-outline</v-icon>
-                </v-btn>
-              </div>
-            </div>
-          </v-card>
-        </transition-group>
+            {{ item.abbreviation }}
+          </div>
+          <div
+            class="text-caption text-medium-emphasis text-truncate"
+            style="max-width: 100%;"
+            :title="item.title"
+          >
+            {{ item.title }}
+          </div>
+        </div>
+      </div>
 
-        <!-- Mensaje cuando no hay datos -->
-        <v-alert
-          v-if="typeDocuments.length === 0 && !loading"
-          type="info"
-          variant="tonal"
-          class="mt-4"
+     <div class="d-flex justify-end mt-auto">
+        <v-btn
+          icon
+          variant="text"
+          color="blue"
+          size="small"
+          @click="editTypeDocument(item)"
+          title="Editar"
         >
-          No hay tipos de documento registrados
-        </v-alert>
+          <v-icon>mdi-pencil-box-multiple-outline</v-icon>
+        </v-btn>
+        <v-btn
+          icon
+          variant="text"
+          color="red"
+          size="small"
+          @click="confirmDelete(item.id)"
+          title="Eliminar"
+        >
+          <v-icon>mdi-delete-alert-outline</v-icon>
+        </v-btn>
+      </div>
+    </v-card>
+  </transition-group>
 
-        <!-- Cargando datos -->
-        <v-progress-circular
-          v-if="loading"
-          indeterminate
-          color="primary"
-          class="mt-4"
-        ></v-progress-circular>
-      </v-col>
+  <!-- Mensaje cuando no hay datos -->
+  <v-alert
+    v-if="typeDocuments.length === 0 && !loading"
+    type="info"
+    variant="tonal"
+    class="mt-3"
+  >
+    No hay tipos de documento registrados
+  </v-alert>
+
+  <!-- Cargando datos -->
+  <v-progress-circular
+    v-if="loading"
+    indeterminate
+    color="primary"
+    class="mt-3"
+  ></v-progress-circular>
+</v-col>
+
     </v-row>
 
     <!-- Modal Crear/Editar Documento -->
@@ -215,6 +228,11 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
+
+const getColorById = (id: number) => {
+  const index = id % colors.length;
+  return colors[index];
+};
 
 interface TypeDocument {
   id: number;

@@ -8,7 +8,7 @@
             <div class="glass-card pa-10 rounded-xl" style="background: rgba(255, 255, 255, 0.75); margin-top: 5vh;">
 
               <h1 class="text-h2 font-weight-bold mb-6 primary--text" style="letter-spacing: -0.5px;">
-                ¡Bienvenido a Linex!
+                ¡Linex!
               </h1>
               <p class="text-body-1 mb-8 text--secondary" style="font-size: 1.1rem; line-height: 1.7;">
                 Organiza, planifica y colabora con tu equipo de manera eficiente.<br>
@@ -160,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue' 
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
