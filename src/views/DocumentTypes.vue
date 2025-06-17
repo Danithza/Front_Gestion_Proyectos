@@ -3,19 +3,20 @@
     <!-- Título y botones -->
     <v-row justify="space-between" align="center" class="mb-6">
       <v-col cols="12" md="6">
-        <h2 class="text-h4 font-weight-bold text-primary">📁 Tipos de Documento</h2>
+        <h2 class="text-h4 font-weight-bold text-black">📂Tipos de Documento</h2>
         <p class="text-caption text-medium-emphasis">Administra los tipos de documentos del sistema</p>
       </v-col>
-      <v-col cols="12" md="6" class="text-md-right">
-        <v-btn
-          color="primary"
-          size="large"
-          @click="openCreateModal"
-          class="shadow-lg"
-        >
-          <v-icon left>mdi-plus-circle-outline</v-icon> Nuevo Documento
-        </v-btn>
-      </v-col>
+       <v-col cols="12" md="6" class="text-md-right">
+       <v-btn
+         icon
+         color="primary"
+         size="large"
+         @click="openCreateModal"
+         class="shadow-lg"
+       >
+         <v-icon>mdi-plus</v-icon>
+       </v-btn>
+     </v-col>
     </v-row>
 
     <v-row>

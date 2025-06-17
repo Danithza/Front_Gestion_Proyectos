@@ -3,10 +3,15 @@
     <!-- Encabezado -->
     <v-row class="mb-4">
       <v-col cols="12" class="d-flex justify-space-between align-center">
-        <h2 class="text-h5 font-weight-bold text-indigo-darken-3">Gestión de Proyectos</h2>
-        <v-btn color="indigo-darken-3" prepend-icon="mdi-plus" @click="abrirModalNuevoProyecto" variant="elevated">
-          Nuevo Proyecto
-        </v-btn>
+        <h2 class="text-h4 font-weight-bold text-black">🗂️Gestión de Proyectos</h2>
+        <v-btn
+         icon
+         color="indigo-darken-3"
+         @click="abrirModalNuevoProyecto"
+         class="shadow-lg"
+       >
+         <v-icon>mdi-plus</v-icon>
+       </v-btn>
       </v-col>
     </v-row>
 
@@ -554,7 +559,6 @@ function showSnackbar(color: string, message: string, icon: string) {
 .task-description {
   color: #616161;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

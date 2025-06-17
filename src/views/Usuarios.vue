@@ -2,11 +2,20 @@
   <v-container class="text-body-1">
     <v-row justify="space-between" align="center" class="mb-4">
       <v-col cols="6">
-        <h2 class="text-h5 font-weight-bold">Gestión de Usuarios</h2>
+        <h2 class="text-h4 font-weight-bold text-black">🧑‍💻Gestión de Usuarios</h2>
+        <p class="text-caption text-medium-emphasis">Agrega, edita y elimina usuarios en la plataforma</p>
       </v-col>
-      <v-col cols="6" class="text-right">
-        <v-btn color="primary" @click="openCreateModal" class="text-body-1">Crear Usuario</v-btn>
-      </v-col>
+       <v-col cols="12" md="6" class="text-md-right">
+       <v-btn
+         icon
+         color="primary"
+         size="large"
+         @click="openCreateModal"
+         class="shadow-lg"
+       >
+         <v-icon>mdi-plus</v-icon>
+       </v-btn>
+     </v-col>
     </v-row>
 
     <!-- Filtros -->

@@ -2,9 +2,14 @@
   <v-container fluid class="tasks-container">
     <v-row class="mb-4">
       <v-col cols="12" class="d-flex justify-space-between align-center">
-        <h2 class="text-h5 font-weight-bold text-indigo-darken-3">Gestión de Tareas</h2>
-        <v-btn color="indigo-darken-3" prepend-icon="mdi-plus" @click="abrirModalNuevaTarea" variant="elevated">
-          Nueva Tarea
+        <h2 class="text-h4 font-weight-bold text-black">📝Gestión de Tareas</h2>
+        <v-btn
+          icon
+          color="indigo-darken-3"
+          @click="abrirModalNuevaTarea"
+          class="shadow-lg"
+          >
+          <v-icon>mdi-plus</v-icon>
         </v-btn>
       </v-col>
     </v-row>

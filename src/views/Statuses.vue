@@ -3,19 +3,20 @@
     <!-- Título y botones -->
     <v-row justify="space-between" align="center" class="mb-6">
       <v-col cols="12" md="6">
-        <h2 class="text-h4 font-weight-bold text-primary">📋 Gestión de Estados</h2>
+        <h2 class="text-h4 font-weight-bold text-black">📋 Gestión de Estados</h2>
         <p class="text-caption text-medium-emphasis">Administra los estados disponibles en la plataforma</p>
       </v-col>
-      <v-col cols="12" md="6" class="text-md-right">
-        <v-btn
-          color="primary"
-          size="large"
-          @click="openCreateModal"
-          class="shadow-lg"
-        >
-          <v-icon left>mdi-plus-circle-outline</v-icon> Nuevo Estado
-        </v-btn>
-      </v-col>
+    <v-col cols="12" md="6" class="text-md-right">
+       <v-btn
+         icon
+         color="primary"
+         size="large"
+         @click="openCreateModal"
+         class="shadow-lg"
+       >
+         <v-icon>mdi-plus</v-icon>
+       </v-btn>
+     </v-col>
     </v-row>
 
     <v-row>
@@ -41,7 +42,7 @@
                 </div>
               </div>
               <div class="d-flex align-center" style="gap: 8px;">
-                <v-chip small :color="item.type === 'task' ? 'blue' : 'purple'" text-color="white">
+                <v-chip small :color="item.type === 'task' ? 'orange' : 'red'" text-color="white">
                   {{ item.type === 'task' ? 'Tarea' : 'Proyecto' }}
                 </v-chip>
                 <v-btn

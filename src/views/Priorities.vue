@@ -3,21 +3,21 @@
     <!-- Título y botones -->
     <v-row justify="space-between" align="center" class="mb-6">
       <v-col cols="12" md="6">
-        <h2 class="text-h4 font-weight-bold text-primary">📌 Gestión de Prioridades</h2>
+        <h2 class="text-h4 font-weight-bold text-black">🎯Gestión de Prioridades</h2>
         <p class="text-caption text-medium-emphasis">Administra las prioridades disponibles en la plataforma</p>
       </v-col>
       <v-col cols="12" md="6" class="text-md-right">
-        <v-btn
-          color="primary"
-          size="large"
-          @click="openCreateModal"
-          class="shadow-lg"
-        >
-          <v-icon left>mdi-plus-circle-outline</v-icon> Nueva Prioridad
-        </v-btn>
-      </v-col>
+       <v-btn
+         icon
+         color="primary"
+         size="large"
+         @click="openCreateModal"
+         class="shadow-lg"
+       >
+         <v-icon>mdi-plus</v-icon>
+       </v-btn>
+     </v-col>
     </v-row>
-
     <v-row>
       <!-- Tarjetas de Prioridades SIN FILTROS -->
       <v-col cols="12">
