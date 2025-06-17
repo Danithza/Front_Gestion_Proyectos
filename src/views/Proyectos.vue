@@ -9,6 +9,7 @@
          color="indigo-darken-3"
          @click="abrirModalNuevoProyecto"
          class="shadow-lg"
+         v-if="authStore.hasPermission('project:create')"
        >
          <v-icon>mdi-plus</v-icon>
        </v-btn>
@@ -191,7 +192,7 @@
         <v-card-actions class="pa-4 bg-indigo-lighten-5">
           <v-spacer></v-spacer>
           <v-btn
-            v-if="editando"
+            v-if="editando && authStore.hasPermission('project:delete')"
             color="red-darken-2"
             variant="tonal"
             @click="confirmarEliminar"
@@ -246,6 +247,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import service from '@/services/baseService'
+import { useAuthStore } from '@/stores/authStore'
+const authStore = useAuthStore()
 
 interface Proyecto {
   id: number
@@ -416,13 +419,16 @@ function abrirModalNuevoProyecto() {
 }
 
 function editarProyecto(proyecto: Proyecto) {
-  proyectoForm.value = {
-    ...proyecto,
-    startDate: proyecto.startDate.split('T')[0],
-    endDate: proyecto.endDate.split('T')[0]
+  if(authStore.hasPermission('project:update'))
+  {
+    proyectoForm.value = {
+      ...proyecto,
+      startDate: proyecto.startDate.split('T')[0],
+      endDate: proyecto.endDate.split('T')[0]
+    }
+    editando.value = true
+    dialog.value = true
   }
-  editando.value = true
-  dialog.value = true
 }
 
 function cerrarModal() {

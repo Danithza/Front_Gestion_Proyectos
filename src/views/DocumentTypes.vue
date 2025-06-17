@@ -12,6 +12,7 @@
          color="primary"
          size="large"
          @click="openCreateModal"
+         v-if="authStore.hasPermission('typeDocument:create')"
          class="shadow-lg"
        >
          <v-icon>mdi-plus</v-icon>
@@ -61,6 +62,7 @@
           size="small"
           @click="editTypeDocument(item)"
           title="Editar"
+          v-if="authStore.hasPermission('typeDocument:update')"
         >
           <v-icon>mdi-pencil-box-multiple-outline</v-icon>
         </v-btn>
@@ -71,6 +73,7 @@
           size="small"
           @click="confirmDelete(item.id)"
           title="Eliminar"
+          v-if="authStore.hasPermission('typeDocument:delete')"
         >
           <v-icon>mdi-delete-alert-outline</v-icon>
         </v-btn>
@@ -226,9 +229,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
+import { useAuthStore } from '@/stores/authStore'
+const authStore = useAuthStore()
 
 const getColorById = (id: number) => {
   const index = id % colors.length;

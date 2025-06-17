@@ -12,6 +12,7 @@
          size="large"
          @click="openCreateModal"
          class="shadow-lg"
+         v-if="authStore.hasPermission('user:create')"
        >
          <v-icon>mdi-plus</v-icon>
        </v-btn>
@@ -54,11 +55,13 @@
         <span>{{ item.city?.title ?? '' }}</span>
       </template>
       <template v-slot:item.actions="{ item }">
-        <v-btn icon color="primary" @click="editUser(item)" class="text-body-1">
+        <v-btn icon color="primary" @click="editUser(item)" class="text-body-1"
+                v-if="authStore.hasPermission('user:update')">
           <v-icon>mdi-account-edit</v-icon>
         </v-btn>
-        <v-btn v-if="currentUser.role === 'admin'" icon color="#B71C1C" @click="askDeleteUser(item)" class="text-body-1"
-          style="margin-left: 8px;">
+        <v-btn icon color="#B71C1C" @click="askDeleteUser(item)"
+               class="text-body-1" v-if="authStore.hasPermission('user:delete')"
+                style="margin-left: 8px;">
           <v-icon>mdi-delete-empty-outline</v-icon>
         </v-btn>
       </template>
@@ -127,10 +130,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import PermissionManager from '@/components/PermissionsManager.vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
+import { useAuthStore } from '@/stores/authStore'
+const authStore = useAuthStore()
 
 interface TypeDocument {
   id: number;

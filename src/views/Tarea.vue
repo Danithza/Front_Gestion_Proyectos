@@ -8,7 +8,8 @@
           color="indigo-darken-3"
           @click="abrirModalNuevaTarea"
           class="shadow-lg"
-          >
+          v-if="authStore.hasPermission('task:create')"
+        >
           <v-icon>mdi-plus</v-icon>
         </v-btn>
       </v-col>
@@ -22,7 +23,7 @@
         @drop="onDrop($event, estado.id)"
         @dragover.prevent
       >
-        <div class="column-header" style="background-color: #2196F3">
+        <div class="column-header" style="background-color: #2196f3">
           <h3 class="column-title">{{ estado.title }}</h3>
           <v-chip variant="flat" color="white" class="task-count">
             {{ tareasPorEstado(estado.id).length }}
@@ -56,15 +57,22 @@
                 <div class="task-meta">
                   <div class="d-flex align-center mt-2">
                     <v-avatar size="24" :color="getUserColor(tarea.userId)" class="mr-2">
-                      <span class="text-caption text-white">{{ getUserInitials(tarea.userId) }}</span>
+                      <span class="text-caption text-white">{{
+                        getUserInitials(tarea.userId)
+                      }}</span>
                     </v-avatar>
                     <span class="text-caption">{{ obtenerNombreUsuario(tarea.userId) }}</span>
                   </div>
                   <div class="d-flex align-center mt-1">
                     <v-icon size="small" class="mr-1">mdi-calendar</v-icon>
-                    <span class="text-caption" :class="{ 'text-red-darken-2': isOverdue(tarea.dueDate) }">
+                    <span
+                      class="text-caption"
+                      :class="{ 'text-red-darken-2': isOverdue(tarea.dueDate) }"
+                    >
                       {{ formatearFecha(tarea.dueDate) }}
-                      <span v-if="isOverdue(tarea.dueDate)" class="text-caption font-weight-bold">(Atrasada)</span>
+                      <span v-if="isOverdue(tarea.dueDate)" class="text-caption font-weight-bold"
+                        >(Atrasada)</span
+                      >
                     </span>
                   </div>
                 </div>
@@ -169,7 +177,7 @@
         <v-card-actions class="pa-4 bg-indigo-lighten-5">
           <v-spacer></v-spacer>
           <v-btn
-            v-if="editando"
+            v-if="editando && authStore.hasPermission('task:delete')"
             color="red-darken-2"
             variant="tonal"
             @click="confirmarEliminar"
@@ -208,12 +216,14 @@
       <v-card class="rounded-lg">
         <v-card-title class="text-h6">Confirmar Eliminación</v-card-title>
         <v-card-text>
-          ¿Estás seguro que deseas eliminar la tarea "<strong>{{ tareaForm.title }}</strong>"?
-          Esta acción no se puede deshacer.
+          ¿Estás seguro que deseas eliminar la tarea "<strong>{{ tareaForm.title }}</strong
+          >"? Esta acción no se puede deshacer.
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="grey-darken-1" variant="text" @click="confirmDialog = false">Cancelar</v-btn>
+          <v-btn color="grey-darken-1" variant="text" @click="confirmDialog = false"
+            >Cancelar</v-btn
+          >
           <v-btn color="red-darken-2" variant="elevated" @click="eliminarTarea">Eliminar</v-btn>
         </v-card-actions>
       </v-card>
@@ -224,6 +234,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import service from '@/services/baseService'
+import { useAuthStore } from '@/stores/authStore'
+const authStore = useAuthStore()
 
 interface Tarea {
   id: number
@@ -389,9 +401,11 @@ function abrirModalNuevaTarea() {
 }
 
 function editarTarea(tarea: Tarea) {
-  tareaForm.value = { ...tarea, dueDate: tarea.dueDate.split('T')[0] }
-  editando.value = true
-  dialog.value = true
+  if(authStore.hasPermission('task:update')){
+    tareaForm.value = { ...tarea, dueDate: tarea.dueDate.split('T')[0] }
+    editando.value = true
+    dialog.value = true
+  }
 }
 
 function cerrarModal() {

@@ -13,6 +13,7 @@
          size="large"
          @click="openCreateModal"
          class="shadow-lg"
+         v-if="authStore.hasPermission('role:create')"
        >
          <v-icon>mdi-plus</v-icon>
        </v-btn>
@@ -56,10 +57,12 @@
                 </div>
               </div>
               <div class="d-flex align-center" style="gap: 8px;">
-                <v-btn icon variant="text" color="blue" size="small" @click="editRole(item)" title="Editar">
+                <v-btn icon variant="text" color="blue" size="small" @click="editRole(item)" title="Editar"
+                        v-if="authStore.hasPermission('role:update')">
                   <v-icon>mdi-pencil-box-multiple-outline</v-icon>
                 </v-btn>
-                <v-btn icon variant="text" color="red" size="small" @click="confirmDelete(item.id)" title="Eliminar">
+                <v-btn icon variant="text" color="red" size="small" @click="confirmDelete(item.id)" title="Eliminar"
+                        v-if="authStore.hasPermission('role:delete')">
                   <v-icon>mdi-delete-alert-outline</v-icon>
                 </v-btn>
               </div>
@@ -185,6 +188,8 @@ import { ref, computed, onMounted, watch } from 'vue';
 import PermissionManager from '@/components/PermissionsManager.vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
+import { useAuthStore } from '@/stores/authStore'
+const authStore = useAuthStore()
 
 interface Role {
   id: number;

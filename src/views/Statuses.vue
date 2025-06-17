@@ -13,6 +13,7 @@
          size="large"
          @click="openCreateModal"
          class="shadow-lg"
+         v-if="authStore.hasPermission('status:create')"
        >
          <v-icon>mdi-plus</v-icon>
        </v-btn>
@@ -52,6 +53,7 @@
                   size="small"
                   @click="editStatus(item)"
                   title="Editar"
+                  v-if="authStore.hasPermission('status:update')"
                 >
                   <v-icon>mdi-pencil-box-multiple-outline</v-icon>
                 </v-btn>
@@ -62,6 +64,7 @@
                   size="small"
                   @click="confirmDelete(item.id)"
                   title="Eliminar"
+                  v-if="authStore.hasPermission('status:delete')"
                 >
                   <v-icon>mdi-delete-alert-outline</v-icon>
                 </v-btn>
@@ -227,9 +230,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import service from '@/services/baseService';
 import CONFIG from '@/config/app';
+import { useAuthStore } from '@/stores/authStore'
+const authStore = useAuthStore()
 
 interface Status {
   id: number;
