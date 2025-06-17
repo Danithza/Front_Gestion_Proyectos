@@ -1,77 +1,237 @@
 <template>
-  <v-container>
-    <v-row class="mb-4" align="center" justify="space-between">
-      <v-col cols="12" md="4">
-        <v-text-field v-model="filtro" label="Buscar proyecto" clearable />
-      </v-col>
-      <v-col cols="12" md="3" class="text-end">
-        <ProyectoForm @proyecto-creado="agregarProyecto" />
+  <v-container fluid class="projects-container">
+    <!-- Encabezado -->
+    <v-row class="mb-4">
+      <v-col cols="12" class="d-flex justify-space-between align-center">
+        <h2 class="text-h5 font-weight-bold text-indigo-darken-3">Gestión de Proyectos</h2>
+        <v-btn color="indigo-darken-3" prepend-icon="mdi-plus" @click="abrirModalNuevoProyecto" variant="elevated">
+          Nuevo Proyecto
+        </v-btn>
       </v-col>
     </v-row>
 
-    <!-- Tabla de proyectos -->
-    <v-table class="elevation-2 rounded-xl">
-      <thead>
-        <tr>
-          <th>Título</th>
-          <th>Descripción</th>
-          <th>Encargado</th>
-          <th>Cliente</th>
-          <th>Estado</th>
-          <th>Fecha Inicio</th>
-          <th>Fecha Fin</th>
-          <th class="text-center">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="proyecto in proyectosFiltrados" :key="proyecto.id">
-          <td>{{ proyecto.title }}</td>
-          <td>{{ proyecto.description }}</td>
-          <td>{{ proyecto.userId }}</td>
-          <td>{{ proyecto.clientId }}</td>
-          <td>{{ proyecto.statusId }}</td>
-          <td>{{ formatoFecha(proyecto.startDate) }}</td>
-          <td>{{ formatoFecha(proyecto.endDate) }}</td>
-          <td class="text-center">
-            <v-btn icon color="blue" @click="editarProyecto(proyecto)">
-              <v-icon>mdi-pencil</v-icon>
-            </v-btn>
-            <v-btn icon color="red" @click="eliminarProyecto(proyecto)">
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
-          </td>
-        </tr>
+    <!-- Mostrar mensaje de error si falla la carga -->
+    <v-alert v-if="errorCarga" type="error" class="mb-4">
+      Error al cargar los datos: {{ errorCarga }}
+      <v-btn small @click="cargarDatos" class="ml-2">Reintentar</v-btn>
+    </v-alert>
 
-        <tr v-if="proyectosFiltrados.length === 0">
-          <td colspan="8" class="text-center text-grey">No se encontraron proyectos.</td>
-        </tr>
-      </tbody>
-    </v-table>
+    <!-- Mostrar esqueleto de carga mientras se obtienen datos -->
+    <v-skeleton-loader
+      v-else-if="cargando"
+      type="card, card, card"
+      class="mb-4"
+    ></v-skeleton-loader>
 
-    <!-- Modal edición -->
-    <v-dialog v-model="editarDialog" max-width="800px">
-      <v-card>
-        <v-card-title>Editar Proyecto</v-card-title>
+    <!-- Vista Kanban cuando los datos están cargados -->
+    <div v-else class="kanban-board">
+      <div
+        v-for="estado in estados"
+        :key="estado.id"
+        class="kanban-column"
+        @drop="onDrop($event, estado.id)"
+        @dragover.prevent
+      >
+        <div class="column-header" :style="{ backgroundColor: getStatusColor(estado.title) }">
+          <h3 class="column-title">{{ estado.title }}</h3>
+          <v-chip variant="flat" color="white" class="task-count">
+            {{ proyectosPorEstado(estado.id).length }}
+          </v-chip>
+        </div>
+
+        <div class="tasks-scroll-container">
+          <transition-group name="list" tag="div">
+            <v-card
+              v-for="proyecto in proyectosPorEstado(estado.id)"
+              :key="proyecto.id"
+              class="task-card"
+              draggable="true"
+              @dragstart="onDragStart($event, proyecto.id)"
+              @click="editarProyecto(proyecto)"
+              :style="{ backgroundColor: '#FFFFFF' }"
+            >
+              <v-card-title class="d-flex justify-space-between align-start task-title">
+                <span class="text-body-1 font-weight-medium">{{ proyecto.title }}</span>
+                <v-chip
+                  size="small"
+                  color="indigo-darken-3"
+                  class="ml-2"
+                  text-color="white"
+                  v-if="proyecto.clientId"
+                >
+                  {{ obtenerNombreCliente(proyecto.clientId) }}
+                </v-chip>
+              </v-card-title>
+              <v-card-text class="task-content">
+                <div class="text-caption task-description">{{ proyecto.description }}</div>
+                <div class="task-meta">
+                  <div class="d-flex align-center mt-2">
+                    <v-avatar size="24" :color="getUserColor(proyecto.userId)" class="mr-2">
+                      <span class="text-caption text-white">{{ getUserInitials(proyecto.userId) }}</span>
+                    </v-avatar>
+                    <span class="text-caption">{{ obtenerNombreUsuario(proyecto.userId) }}</span>
+                  </div>
+                  <div class="d-flex align-center mt-1">
+                    <v-icon size="small" class="mr-1">mdi-calendar-start</v-icon>
+                    <span class="text-caption">{{ formatearFecha(proyecto.startDate) }}</span>
+                  </div>
+                  <div class="d-flex align-center mt-1">
+                    <v-icon size="small" class="mr-1">mdi-calendar-end</v-icon>
+                    <span class="text-caption" :class="{ 'text-red-darken-2': isOverdue(proyecto.endDate) }">
+                      {{ formatearFecha(proyecto.endDate) }}
+                      <span v-if="isOverdue(proyecto.endDate)" class="text-caption font-weight-bold">(Atrasado)</span>
+                    </span>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </transition-group>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para crear/editar proyecto -->
+    <v-dialog v-model="dialog" max-width="800px" persistent>
+      <v-card class="rounded-xl">
+        <v-toolbar :color="editando ? 'blue-darken-2' : 'indigo-darken-3'" density="compact">
+          <v-toolbar-title class="text-white">
+            <v-icon left>{{ editando ? 'mdi-pencil' : 'mdi-plus' }}</v-icon>
+            {{ editando ? 'Editar Proyecto' : 'Crear Proyecto' }}
+          </v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="cerrarModal" variant="text" color="white">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-toolbar>
+
+        <v-card-text class="pa-6">
+          <v-text-field
+            v-model="proyectoForm.title"
+            label="Título"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+          />
+          <v-textarea
+            v-model="proyectoForm.description"
+            label="Descripción"
+            class="mb-4"
+            variant="outlined"
+            rows="3"
+            auto-grow
+            color="indigo-darken-3"
+          />
+          <v-select
+            v-model="proyectoForm.userId"
+            :items="usuarios"
+            item-value="id"
+            item-title="name"
+            label="Encargado"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+            :menu-props="{ maxHeight: 200 }"
+          />
+          <v-select
+            v-model="proyectoForm.clientId"
+            :items="clientes"
+            item-value="id"
+            item-title="name"
+            label="Cliente"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+            :menu-props="{ maxHeight: 200 }"
+          />
+          <v-select
+            v-model="proyectoForm.statusId"
+            :items="estados"
+            item-value="id"
+            item-title="title"
+            label="Estado"
+            class="mb-4"
+            variant="outlined"
+            :rules="[required]"
+            color="indigo-darken-3"
+            :menu-props="{ maxHeight: 200 }"
+          />
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="proyectoForm.startDate"
+                label="Fecha de inicio"
+                type="date"
+                variant="outlined"
+                :rules="[required]"
+                color="indigo-darken-3"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="proyectoForm.endDate"
+                label="Fecha de fin"
+                type="date"
+                variant="outlined"
+                :rules="[required, val => val >= proyectoForm.startDate || 'Debe ser posterior a fecha de inicio']"
+                :min="proyectoForm.startDate"
+                color="indigo-darken-3"
+              />
+            </v-col>
+          </v-row>
+        </v-card-text>
+
+        <v-card-actions class="pa-4 bg-indigo-lighten-5">
+          <v-spacer></v-spacer>
+          <v-btn
+            v-if="editando"
+            color="red-darken-2"
+            variant="tonal"
+            @click="confirmarEliminar"
+            prepend-icon="mdi-delete"
+          >
+            Eliminar
+          </v-btn>
+          <v-btn
+            color="indigo-darken-3"
+            @click="guardarProyecto"
+            variant="elevated"
+            :prepend-icon="editando ? 'mdi-content-save' : 'mdi-plus'"
+          >
+            {{ editando ? 'Actualizar' : 'Crear' }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Snackbar para notificaciones -->
+    <v-snackbar
+      v-model="snackbar.show"
+      :timeout="3000"
+      :color="snackbar.color"
+      location="bottom right"
+      rounded="pill"
+    >
+      <div class="d-flex align-center">
+        <v-icon class="mr-2">{{ snackbar.icon }}</v-icon>
+        {{ snackbar.message }}
+      </div>
+    </v-snackbar>
+
+    <!-- Dialogo de confirmación para eliminar -->
+    <v-dialog v-model="confirmDialog" max-width="400px">
+      <v-card class="rounded-lg">
+        <v-card-title class="text-h6">Confirmar Eliminación</v-card-title>
         <v-card-text>
-          <v-form @submit.prevent="guardarEdicion">
-            <v-text-field v-model="proyectoEditado.title" label="Título" />
-            <v-textarea v-model="proyectoEditado.description" label="Descripción" />
-            <v-text-field
-              v-model="proyectoEditado.startDate"
-              label="Fecha Inicio"
-              type="date"
-            />
-            <v-text-field
-              v-model="proyectoEditado.endDate"
-              label="Fecha Fin"
-              type="date"
-            />
-          </v-form>
+          ¿Estás seguro que deseas eliminar el proyecto "<strong>{{ proyectoForm.title }}</strong>"?
+          Esta acción no se puede deshacer.
         </v-card-text>
         <v-card-actions>
-          <v-spacer />
-          <v-btn color="error" text @click="editarDialog = false">Cancelar</v-btn>
-          <v-btn color="primary" @click="guardarEdicion">Guardar</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn color="grey-darken-1" variant="text" @click="confirmDialog = false">Cancelar</v-btn>
+          <v-btn color="red-darken-2" variant="elevated" @click="eliminarProyecto">Eliminar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -79,70 +239,350 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import service from '@/services/baseService'
 
 interface Proyecto {
   id: number
   title: string
   description: string
-  userId: string
-  clientId: string
-  statusId: string
+  userId: number | null
+  statusId: number | null
+  clientId: number | null
   startDate: string
   endDate: string
 }
 
+interface Estado { id: number; title: string }
+interface Usuario { id: number; firstName: string; lastName: string; name?: string }
+interface Cliente { id: number; name: string }
+
 const proyectos = ref<Proyecto[]>([])
-const filtro = ref('')
-const editarDialog = ref(false)
-const proyectoEditado = ref<Proyecto>({
+const estados = ref<Estado[]>([])
+const usuarios = ref<Usuario[]>([])
+const clientes = ref<Cliente[]>([])
+const cargando = ref(true)
+const errorCarga = ref<string | null>(null)
+const dialog = ref(false)
+const editando = ref(false)
+const confirmDialog = ref(false)
+
+const snackbar = ref({
+  show: false,
+  message: '',
+  color: 'success',
+  icon: 'mdi-check'
+})
+
+const proyectoForm = ref<Proyecto>({
   id: 0,
   title: '',
   description: '',
-  userId: '',
-  clientId: '',
-  statusId: '',
-  startDate: '',
-  endDate: '',
+  userId: null,
+  statusId: null,
+  clientId: null,
+  startDate: new Date().toISOString().split('T')[0],
+  endDate: new Date().toISOString().split('T')[0]
 })
 
-onMounted(async () => {
+const userColors = [
+  '#2196F3', // Azul
+  '#009688', // Verde agua
+  '#3F51B5', // Índigo
+  '#00BCD4', // Cyan
+  '#8BC34A'  // Verde lima
+]
+
+async function cargarDatos() {
   try {
-    const data = await service.index<Proyecto[]>('/projects')
-    proyectos.value = data
+    cargando.value = true
+    errorCarga.value = null
+
+    // Intenta cargar datos reales
+    const [projects, users, stats, clients] = await Promise.all([
+      service.index<Proyecto[]>('/projects').catch(() => []),
+      service.index<Usuario[]>('/users').catch(() => []),
+      service.index<Estado[]>('/statuses', { type: 'project' }).catch(() => []),
+      service.index<Cliente[]>('/clients').catch(() => [])
+    ])
+
+    proyectos.value = projects
+    usuarios.value = users.map(u => ({ ...u, name: `${u.firstName} ${u.lastName}` }))
+    estados.value = stats
+    clientes.value = clients
+
+    // Si no hay datos, mostrar advertencia
+    if (projects.length === 0 && users.length === 0 && stats.length === 0 && clients.length === 0) {
+      throw new Error('No se pudieron cargar los datos. Verifica la conexión con el servidor.')
+    }
   } catch (error) {
-    console.error('Error al cargar proyectos:', error)
+    console.error('Error en carga de datos:', error)
+    errorCarga.value = error instanceof Error ? error.message : 'Error desconocido al cargar datos'
+    showSnackbar('error', 'Error al cargar datos', 'mdi-alert-circle')
+  } finally {
+    cargando.value = false
   }
-})
-
-const proyectosFiltrados = computed(() => {
-  return proyectos.value.filter(p =>
-    p.title.toLowerCase().includes(filtro.value.toLowerCase())
-  )
-})
-
-function agregarProyecto(nuevo: Proyecto) {
-  proyectos.value.push(nuevo)
 }
 
-function editarProyecto(p: Proyecto) {
-  proyectoEditado.value = { ...p }
-  editarDialog.value = true
+onMounted(cargarDatos)
+
+function proyectosPorEstado(id: number) {
+  return proyectos.value
+    .filter(p => p.statusId === id)
+    .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())
 }
 
-function guardarEdicion() {
-  const index = proyectos.value.findIndex(p => p.id === proyectoEditado.value.id)
-  if (index !== -1) proyectos.value[index] = { ...proyectoEditado.value }
-  editarDialog.value = false
+function formatearFecha(fecha: string) {
+  if (!fecha) return ''
+  const [anio, mes, dia] = fecha.split('T')[0].split('-')
+  return `${dia}/${mes}/${anio}`
 }
 
-function eliminarProyecto(p: Proyecto) {
-  proyectos.value = proyectos.value.filter(proj => proj.id !== p.id)
+function obtenerNombreUsuario(id: number | null): string {
+  if (!id) return 'Sin asignar'
+  const user = usuarios.value.find(u => u.id === id)
+  return user ? `${user.firstName} ${user.lastName}` : `Usuario ${id}`
 }
 
-function formatoFecha(fecha: string) {
-  if (!fecha) return '-'
-  return fecha.slice(0, 10).split('-').reverse().join('/') // "2025-01-05" → "05/01/2025"
+function obtenerNombreCliente(id: number | null): string {
+  if (!id) return 'Sin cliente'
+  const cliente = clientes.value.find(c => c.id === id)
+  return cliente ? cliente.name : `Cliente ${id}`
+}
+
+function getUserInitials(id: number | null): string {
+  if (!id) return '?'
+  const user = usuarios.value.find(u => u.id === id)
+  if (!user) return '?'
+  return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+}
+
+function getUserColor(id: number | null): string {
+  if (!id) return '#9E9E9E' // Gris para usuarios no asignados
+  return userColors[id % userColors.length]
+}
+
+function getStatusColor(statusTitle: string) {
+  const statusColors: Record<string, string> = {
+    'Nuevo': '#2196F3',      // Azul
+    'En progreso': '#FF9800', // Naranja
+    'En revisión': '#9C27B0', // Morado
+    'Completado': '#4CAF50',  // Verde
+    'Cancelado': '#F44336',   // Rojo
+    'Pausado': '#607D8B'      // Gris azulado
+  }
+  return statusColors[statusTitle] || '#2196F3' // Azul por defecto
+}
+
+function isOverdue(endDate: string) {
+  if (!endDate) return false
+  const today = new Date().toISOString().split('T')[0]
+  return endDate < today
+}
+
+function onDragStart(e: DragEvent, id: number) {
+  e.dataTransfer?.setData('text/plain', id.toString())
+}
+
+function onDrop(e: DragEvent, estado: number) {
+  const id = parseInt(e.dataTransfer?.getData('text/plain') || '')
+  const proyecto = proyectos.value.find(p => p.id === id)
+  if (proyecto) {
+    proyecto.statusId = estado
+    service.update('/projects', id, { statusId: estado })
+      .catch(err => {
+        console.error('Error al actualizar estado:', err)
+        showSnackbar('error', 'Error al actualizar estado', 'mdi-alert-circle')
+      })
+    showSnackbar('success', 'Estado actualizado', 'mdi-check-circle')
+  }
+}
+
+function abrirModalNuevoProyecto() {
+  proyectoForm.value = {
+    id: 0,
+    title: '',
+    description: '',
+    userId: null,
+    statusId: estados.value[0]?.id || null,
+    clientId: null,
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  }
+  editando.value = false
+  dialog.value = true
+}
+
+function editarProyecto(proyecto: Proyecto) {
+  proyectoForm.value = {
+    ...proyecto,
+    startDate: proyecto.startDate.split('T')[0],
+    endDate: proyecto.endDate.split('T')[0]
+  }
+  editando.value = true
+  dialog.value = true
+}
+
+function cerrarModal() {
+  dialog.value = false
+}
+
+function required(v: any) {
+  return !!v || 'Campo requerido'
+}
+
+async function guardarProyecto() {
+  // Validar que todos los campos requeridos estén completos
+  if (!proyectoForm.value.title ||
+      !proyectoForm.value.userId ||
+      !proyectoForm.value.clientId ||
+      !proyectoForm.value.statusId ||
+      !proyectoForm.value.startDate ||
+      !proyectoForm.value.endDate) {
+    showSnackbar('error', 'Por favor complete todos los campos requeridos', 'mdi-alert-circle')
+    return
+  }
+
+  const data = { ...proyectoForm.value }
+
+  try {
+    if (editando.value) {
+      await service.update('/projects', data.id, data)
+      const idx = proyectos.value.findIndex(p => p.id === data.id)
+      if (idx !== -1) proyectos.value[idx] = { ...data }
+      showSnackbar('success', 'Proyecto actualizado con éxito', 'mdi-check-circle')
+    } else {
+      const nuevo = await service.store<Proyecto>('/projects', data)
+      proyectos.value.push(nuevo)
+      showSnackbar('success', 'Proyecto creado con éxito', 'mdi-check-circle')
+    }
+    cerrarModal()
+  } catch (err) {
+    console.error('Error al guardar proyecto', err)
+    showSnackbar('error', 'Error al guardar el proyecto', 'mdi-alert-circle')
+  }
+}
+
+function confirmarEliminar() {
+  confirmDialog.value = true
+}
+
+async function eliminarProyecto() {
+  try {
+    await service.delete('/projects', proyectoForm.value.id.toString())
+    proyectos.value = proyectos.value.filter(p => p.id !== proyectoForm.value.id)
+    confirmDialog.value = false
+    dialog.value = false
+    showSnackbar('success', 'Proyecto eliminado con éxito', 'mdi-check-circle')
+  } catch (err) {
+    console.error('Error al eliminar', err)
+    showSnackbar('error', 'No se pudo eliminar el proyecto', 'mdi-alert-circle')
+  }
+}
+
+function showSnackbar(color: string, message: string, icon: string) {
+  snackbar.value = {
+    show: true,
+    message,
+    color,
+    icon
+  }
 }
 </script>
+
+<style scoped>
+.projects-container {
+  padding: 20px;
+  max-width: 100%;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+
+.kanban-column {
+  min-width: 300px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.column-header {
+  padding: 12px 16px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.column-title {
+  color: white;
+  font-weight: 500;
+  margin: 0;
+}
+
+.task-count {
+  font-weight: bold;
+}
+
+.tasks-scroll-container {
+  padding: 8px;
+  flex-grow: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.task-card {
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: transform 0.2s;
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.task-title {
+  padding: 12px 16px 0;
+}
+
+.task-content {
+  padding: 0 16px 12px;
+}
+
+.task-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-meta {
+  margin-top: 8px;
+}
+
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.list-leave-active {
+  position: absolute;
+}
+</style>
