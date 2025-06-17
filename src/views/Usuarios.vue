@@ -84,18 +84,18 @@
     <v-dialog v-model="dialog" max-width="600px">
       <v-card class="elevation-1 text-body-1">
         <v-card-title>
-          <span class="text-h6 font-weight-bold">{{ editingUser ? 'Edit User' : 'Create User' }}</span>
+          <span class="text-h6 font-weight-bold">{{ editingUser ? 'Edit User' : 'Crear Usuario' }}</span>
         </v-card-title>
         <v-card-text>
           <v-form ref="form" :lazy-validation="true">
             <div class="text-right mb-6">
               <PermissionManager v-model="userForm.permissions" />
             </div>
-            <v-text-field v-model="userForm.firstName" label="First Name"
+            <v-text-field v-model="userForm.firstName" label="Nombres"
               :rules="[v => !!v || 'First name is required']" class="text-body-1" />
-            <v-text-field v-model="userForm.lastName" label="Last Name" :rules="[v => !!v || 'Last name is required']"
+            <v-text-field v-model="userForm.lastName" label="Apellidos" :rules="[v => !!v || 'Last name is required']"
               class="text-body-1" />
-            <v-text-field v-model.number="userForm.telephone" label="Telephone" type="number" :rules="[
+            <v-text-field v-model.number="userForm.telephone" label="Telefono" type="number" :rules="[
               v => !!v || 'Telephone is required',
               v => /^\d{10}$/.test(String(v)) || 'Telephone must be 10 digits'
             ]" class="text-body-1" />
@@ -103,16 +103,16 @@
               v => !!v || 'Email is required',
               v => /.+@.+\..+/.test(v) || 'Email must be valid'
             ]" class="text-body-1" />
-            <v-text-field v-model="userForm.password" label="Password" :rules="[
+            <v-text-field v-model="userForm.password" label="Contraseña" :rules="[
               v => !!v || 'Password is required',
               v => v.length >= 6 || 'Password must be at least 6 characters'
             ]" :type="editingUser ? 'text' : 'password'" class="text-body-1" />
             <v-select v-model="userForm.roleIds" :items="roles" item-text="title" item-value="id" label="Roles" multiple
               :rules="[v => v && v.length > 0 || 'At least one role is required']" class="text-body-1" />
             <v-select v-model="userForm.typeDocumentId" :items="typeDocuments" item-text="title" item-value="id"
-              label="Document Type" :rules="[v => !!v || 'Document type is required']" class="text-body-1" />
-            <v-text-field v-model="userForm.document" label="Documento" type="number" class="text-body-1" />
-            <v-select v-model="userForm.cityId" :items="cities" item-text="title" item-value="id" label="City"
+              label="Tipo de documento" :rules="[v => !!v || 'Document type is required']" class="text-body-1" />
+            <v-text-field v-model="userForm.document" label="N°Documento" type="number" class="text-body-1" />
+            <v-select v-model="userForm.cityId" :items="cities" item-text="title" item-value="id" label="Ciudad"
               :rules="[v => !!v || 'City is required']" class="text-body-1" />
           </v-form>
         </v-card-text>
@@ -165,15 +165,15 @@ interface User {
 }
 
 const headers = [
-  { title: 'First Name', key: 'firstName', sortable: false },
-  { title: 'Last Name', key: 'lastName', sortable: false },
+  { title: 'Nombres', key: 'firstName', sortable: false },
+  { title: 'Apellidos', key: 'lastName', sortable: false },
   { title: 'Email', key: 'email', sortable: false },
-  { title: 'Telephone', key: 'telephone', sortable: false },
-  { title: 'Document Type', key: 'typeDocument', sortable: false },
-  { title: 'Document', key: 'document', sortable: false },
+  { title: 'Telefono', key: 'telephone', sortable: false },
+  { title: 'Tipo de documento', key: 'typeDocument', sortable: false },
+  { title: 'N°Document', key: 'document', sortable: false },
   { title: 'Roles', key: 'roles', sortable: false },
-  { title: 'City', key: 'city', sortable: false },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: 'Ciudad', key: 'city', sortable: false },
+  { title: 'Acciones', key: 'actions', sortable: false },
 ];
 
 const users = ref<User[]>([]);
