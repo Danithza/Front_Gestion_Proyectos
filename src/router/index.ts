@@ -82,6 +82,7 @@ const routes = [
         path: 'dashboard',
         name: 'main.dashboard',
         component: Dashboard,
+        meta: {requireAuth: true}
       },
       {
         path: '/proyectos',
@@ -98,12 +99,14 @@ const routes = [
       {
         path: '/reportes',
         name: 'main.reportes',
-        component: Reportes
+        component: Reportes,
+        meta: {requireAuth: true}
       },
       {
         path: '/perfil',
         name: 'main.perfil',
-        component: Perfil
+        component: Perfil,
+        meta: {requireAuth: true}
       },
       {
         path: '/unauthorized',
@@ -122,10 +125,15 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore();
 
+  if((to.meta.permission || to.meta.requireAuth) && !auth.isAuthenticated){
+    return next({ name: 'auth.inicio' });
+  }
+
   const requiredPermission = to.meta.permission;
   if (requiredPermission && !auth.hasPermission(requiredPermission)) {
     return next({ name: 'main.noAuthorized' }); // or redirect to login, etc.
   }
+
 
   next();
 });
