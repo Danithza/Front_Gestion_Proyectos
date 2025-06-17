@@ -136,7 +136,7 @@
           />
           <v-select
             v-model="proyectoForm.clientId"
-            :items="clientes"
+            :items="usuarios"
             item-value="id"
             item-title="name"
             label="Cliente"
@@ -255,12 +255,10 @@ interface Proyecto {
 
 interface Estado { id: number; title: string }
 interface Usuario { id: number; firstName: string; lastName: string; name?: string }
-interface Cliente { id: number; name: string }
 
 const proyectos = ref<Proyecto[]>([])
 const estados = ref<Estado[]>([])
 const usuarios = ref<Usuario[]>([])
-const clientes = ref<Cliente[]>([])
 const cargando = ref(true)
 const errorCarga = ref<string | null>(null)
 const dialog = ref(false)
@@ -298,21 +296,20 @@ async function cargarDatos() {
     cargando.value = true
     errorCarga.value = null
 
-    // Intenta cargar datos reales
-    const [projects, users, stats, clients] = await Promise.all([
+    const [projects, users, stats] = await Promise.all([
       service.index<Proyecto[]>('/projects').catch(() => []),
       service.index<Usuario[]>('/users').catch(() => []),
-      service.index<Estado[]>('/statuses', { type: 'project' }).catch(() => []),
-      service.index<Cliente[]>('/clients').catch(() => [])
+      service.index<Estado[]>('/statuses', { type: 'project' }).catch(() => [])
     ])
 
     proyectos.value = projects
-    usuarios.value = users.map(u => ({ ...u, name: `${u.firstName} ${u.lastName}` }))
+    usuarios.value = users.map(u => ({
+      ...u,
+      name: `${u.firstName} ${u.lastName}`
+    }))
     estados.value = stats
-    clientes.value = clients
 
-    // Si no hay datos, mostrar advertencia
-    if (projects.length === 0 && users.length === 0 && stats.length === 0 && clients.length === 0) {
+    if (projects.length === 0 && users.length === 0 && stats.length === 0) {
       throw new Error('No se pudieron cargar los datos. Verifica la conexión con el servidor.')
     }
   } catch (error) {
@@ -346,8 +343,8 @@ function obtenerNombreUsuario(id: number | null): string {
 
 function obtenerNombreCliente(id: number | null): string {
   if (!id) return 'Sin cliente'
-  const cliente = clientes.value.find(c => c.id === id)
-  return cliente ? cliente.name : `Cliente ${id}`
+  const usuario = usuarios.value.find(u => u.id === id)
+  return usuario ? `${usuario.firstName} ${usuario.lastName}` : `Cliente ${id}`
 }
 
 function getUserInitials(id: number | null): string {
@@ -432,7 +429,6 @@ function required(v: any) {
 }
 
 async function guardarProyecto() {
-  // Validar que todos los campos requeridos estén completos
   if (!proyectoForm.value.title ||
       !proyectoForm.value.userId ||
       !proyectoForm.value.clientId ||
@@ -492,14 +488,14 @@ function showSnackbar(color: string, message: string, icon: string) {
 
 <style scoped>
 .projects-container {
-  padding: 20px;
   max-width: 100%;
+  padding: 20px;
 }
 
 .kanban-board {
   display: flex;
-  gap: 16px;
   overflow-x: auto;
+  gap: 16px;
   padding-bottom: 16px;
 }
 
@@ -507,43 +503,39 @@ function showSnackbar(color: string, message: string, icon: string) {
   min-width: 300px;
   background-color: #f5f5f5;
   border-radius: 8px;
-  display: flex;
-  flex-direction: column;
+  padding: 8px;
 }
 
 .column-header {
-  padding: 12px 16px;
-  border-radius: 8px 8px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  color: white;
 }
 
 .column-title {
-  color: white;
+  font-size: 1rem;
   font-weight: 500;
   margin: 0;
 }
 
 .task-count {
-  font-weight: bold;
+  font-size: 0.75rem;
 }
 
 .tasks-scroll-container {
-  padding: 8px;
-  flex-grow: 1;
+  max-height: calc(100vh - 250px);
   overflow-y: auto;
-  max-height: calc(100vh - 200px);
+  padding-right: 4px;
 }
 
 .task-card {
-  margin-bottom: 8px;
-  cursor: grab;
-  transition: transform 0.2s;
-}
-
-.task-card:active {
-  cursor: grabbing;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .task-card:hover {
@@ -552,25 +544,30 @@ function showSnackbar(color: string, message: string, icon: string) {
 }
 
 .task-title {
-  padding: 12px 16px 0;
+  padding: 12px 16px 0 16px;
 }
 
 .task-content {
-  padding: 0 16px 12px;
+  padding: 0 16px 12px 16px;
 }
 
 .task-description {
+  color: #616161;
   display: -webkit-box;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .task-meta {
-  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #757575;
 }
 
-.list-move,
+.list-move {
+  transition: transform 0.5s ease;
+}
+
 .list-enter-active,
 .list-leave-active {
   transition: all 0.5s ease;
@@ -579,10 +576,6 @@ function showSnackbar(color: string, message: string, icon: string) {
 .list-enter-from,
 .list-leave-to {
   opacity: 0;
-  transform: translateX(30px);
-}
-
-.list-leave-active {
-  position: absolute;
+  transform: translateY(30px);
 }
 </style>
