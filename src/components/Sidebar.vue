@@ -32,15 +32,15 @@ interface NavItem {
 
 const allItems: NavItem[] = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/dashboard' },
-  { title: 'Proyectos', icon: 'mdi-folder-outline', to: '/proyectos' },
-  { title: 'Tareas', icon: 'mdi-format-list-checkbox', to: '/tareas' },
+  { title: 'Proyectos', icon: 'mdi-folder-outline', to: '/proyectos', permission: 'project:read' },
+  { title: 'Tareas', icon: 'mdi-format-list-checkbox', to: '/tareas', permission: 'task:read' },
   { title: 'Reportes', icon: 'mdi-chart-box-outline', to: '/reportes' },
-  { title: 'Usuarios', icon: 'mdi-account', to: '/usuarios' },
-  { title: 'Roles', icon: 'mdi-account-cog-outline', to: '/roles' },
+  { title: 'Usuarios', icon: 'mdi-account', to: '/usuarios', permission: 'user:read' },
+  { title: 'Roles', icon: 'mdi-account-cog-outline', to: '/roles', permission: 'role:read' },
   { title: 'Cities', icon: 'mdi-home-city', to: '/cities', permission: 'city:read' },
-  { title: 'Document Types', icon: 'mdi-badge-account', to: '/document-types' },
-  { title: 'Statuses', icon: 'mdi-list-status', to: '/statuses' },
-  { title: 'Priorities', icon: 'mdi-flag-variant', to: '/priorities' },
+  { title: 'Document Types', icon: 'mdi-badge-account', to: '/document-types', permission: 'typeDocument:read' },
+  { title: 'Statuses', icon: 'mdi-list-status', to: '/statuses',permission: 'status:read' },
+  { title: 'Priorities', icon: 'mdi-flag-variant', to: '/priorities', permission: 'priority:read' },
 ].filter((item: NavItem) => {
   if (!item.permission) return true
   return authStore.hasPermission(item.permission)
