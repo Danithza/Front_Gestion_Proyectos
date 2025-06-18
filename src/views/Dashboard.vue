@@ -1,6 +1,15 @@
 <template>
   <v-container fluid>
-    <!-- Resumen general -->
+    <!-- Botón de refresh -->
+    <v-row>
+      <v-col cols="12" class="d-flex justify-end">
+        <v-btn color="primary" @click="fetchDashboard" :loading="loading" prepend-icon="mdi-refresh">
+          Actualizar
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <!-- Tarjetas resumen -->
     <v-row>
       <v-col cols="12" sm="6" md="3" v-for="card in summaryCards" :key="card.title">
         <v-card class="pa-4" elevation="5">
@@ -11,62 +20,38 @@
       </v-col>
     </v-row>
 
-    <!-- Sección de estado de tareas y proyectos -->
+    <!-- Estado de Proyectos y Tareas -->
     <v-row>
-      <!-- Progreso de Tareas -->
-      <v-col cols="12" md="6">
-        <v-card class="pa-4" elevation="5">
-          <h3 class="text-subtitle-1 mb-3">Progreso de Tareas</h3>
-          <v-progress-linear
-            color="primary"
-            height="46"
-            :model-value="75"
-            striped
-            rounded
-          >
-            <strong>75% Completadas</strong>
-          </v-progress-linear>
-        </v-card>
-      </v-col>
-
       <!-- Estado de los Proyectos -->
       <v-col cols="12" md="6">
         <v-card class="pa-4" elevation="5">
           <h3 class="text-subtitle-1 mb-3">Estado de los Proyectos</h3>
           <v-chip-group column>
-            <v-chip color="blue" class="ma-1">En desarrollo (4)</v-chip>
-            <v-chip color="green" class="ma-1">Finalizados (6)</v-chip>
-            <v-chip color="orange" class="ma-1">En revisión (2)</v-chip>
+            <v-chip
+              v-for="status in projectsByStatus"
+              :key="status.statusId"
+              :color="getProjectStatusColor(status.statusTitle)"
+              class="ma-1"
+            >
+              {{ status.statusTitle }} ({{ status.total }})
+            </v-chip>
           </v-chip-group>
         </v-card>
       </v-col>
-    </v-row>
-
-    <!-- Roles y Configuración -->
-    <v-row>
-      <!-- Roles del sistema -->
+      <!-- Estado de las Tareas -->
       <v-col cols="12" md="6">
         <v-card class="pa-4" elevation="5">
-          <h3 class="text-subtitle-1 mb-3">Roles del sistema</h3>
-          <v-list density="compact">
-            <v-list-item v-for="role in roles" :key="role.name">
-              <v-list-item-title>{{ role.name }}</v-list-item-title>
-              <v-chip size="small" :color="role.color">{{ role.users }} usuarios</v-chip>
-            </v-list-item>
-          </v-list>
-        </v-card>
-      </v-col>
-
-      <!-- Configuración activa -->
-      <v-col cols="12" md="6">
-        <v-card class="pa-4" elevation="5">
-          <h3 class="text-subtitle-1 mb-3">Configuraciones activas</h3>
-          <v-list density="compact">
-            <v-list-item v-for="setting in settings" :key="setting.label">
-              <v-list-item-title>{{ setting.label }}</v-list-item-title>
-              <v-icon :color="setting.enabled ? 'green' : 'red'">{{ setting.enabled ? 'mdi-check-circle' : 'mdi-cancel' }}</v-icon>
-            </v-list-item>
-          </v-list>
+          <h3 class="text-subtitle-1 mb-3">Estado de las Tareas</h3>
+          <v-chip-group column>
+            <v-chip
+              v-for="status in tasksByStatus"
+              :key="status.statusId"
+              :color="getTaskStatusColor(status.statusTitle)"
+              class="ma-1"
+            >
+              {{ status.statusTitle }} ({{ status.total }})
+            </v-chip>
+          </v-chip-group>
         </v-card>
       </v-col>
     </v-row>
@@ -74,25 +59,55 @@
 </template>
 
 <script setup lang="ts">
-// Información simulada que luego puedes reemplazar por datos reales
-const summaryCards = [
-  { title: 'Proyectos Activos', value: 12, icon: 'mdi-folder', color: 'primary' },
-  { title: 'Tareas Pendientes', value: 34, icon: 'mdi-clipboard-list', color: 'orange' },
-  { title: 'Roles del Sistema', value: 5, icon: 'mdi-account-group', color: 'indigo' },
-  { title: 'Config. Activas', value: 3, icon: 'mdi-cog-outline', color: 'green' },
-]
+import { ref, onMounted } from 'vue'
+import service from '@/services/baseService'
 
-const roles = [
-  { name: 'Administrador', users: 2, color: 'red' },
-  { name: 'Gestor de Proyecto', users: 5, color: 'blue' },
-  { name: 'Desarrollador', users: 10, color: 'green' },
-]
+const loading = ref(false)
 
-const settings = [
-  { label: 'Notificaciones', enabled: true },
-  { label: 'Modo oscuro', enabled: false },
-  { label: 'Tareas automáticas', enabled: true },
-]
+const summaryCards = ref([
+  { title: 'Total Proyectos', value: 0, icon: 'mdi-folder', color: 'primary' },
+  { title: 'Total Tareas', value: 0, icon: 'mdi-clipboard-list', color: 'orange' },
+  { title: 'Total Usuarios', value: 0, icon: 'mdi-account', color: 'teal' },
+  { title: 'Total Roles', value: 0, icon: 'mdi-account-group', color: 'indigo' },
+])
+
+const projectsByStatus = ref<any[]>([])
+const tasksByStatus = ref<any[]>([])
+
+function getProjectStatusColor(statusTitle: string) {
+  if (!statusTitle) return 'grey'
+  if (statusTitle.toLowerCase().includes('desarrollo')) return 'blue'
+  if (statusTitle.toLowerCase().includes('finalizad')) return 'green'
+  if (statusTitle.toLowerCase().includes('revisión')) return 'orange'
+  if (statusTitle.toLowerCase().includes('pendiente')) return 'red'
+  return 'grey'
+}
+
+function getTaskStatusColor(statusTitle: string) {
+  if (!statusTitle) return 'grey'
+  if (statusTitle.toLowerCase().includes('complet')) return 'green'
+  if (statusTitle.toLowerCase().includes('en progreso')) return 'blue'
+  if (statusTitle.toLowerCase().includes('pendiente')) return 'orange'
+  if (statusTitle.toLowerCase().includes('bloqueada')) return 'red'
+  return 'grey'
+}
+
+async function fetchDashboard() {
+  loading.value = true
+  try {
+    const data = await service.get('/app/dashboard')
+    summaryCards.value[0].value = data.projects
+    summaryCards.value[1].value = data.tasks
+    summaryCards.value[2].value = data.users
+    summaryCards.value[3].value = data.roles
+    projectsByStatus.value = data.projectsByStatus
+    tasksByStatus.value = data.tasksByStatus
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchDashboard)
 </script>
 
 <style scoped>
