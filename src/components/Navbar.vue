@@ -1,3 +1,4 @@
+navbar
 <template>
   <v-app-bar
     color="blue-darken-2"
@@ -7,25 +8,27 @@
     flat
     class="navbar-completo"
   >
-    <v-btn text class="d-flex align-center" to="/">
+    <!-- Logo y título -->
+    <div class="d-flex align-center logo-container">
       <v-img
-        src="@/assets/Logo.png"
+        :src="Logo"
         alt="Logo Linex"
-        max-width="40"
-        max-height="40"
+        width="70"
+        class="mr-3"
         contain
-        class="me-2 rounded"
       />
-      <span class="text-h6 font-weight-bold">Linex</span>
-    </v-btn>
+      <span class="text-h4 font-weight-bold text-white logo-text">Linex</span>
+    </div>
 
     <v-spacer />
 
+    <!-- Buscador -->
     <v-text-field
       v-model="search"
-      flat
-      hide-details
+      variant="solo"
       rounded
+      clearable
+      hide-details
       prepend-inner-icon="mdi-magnify"
       label="Buscar"
       class="search-field"
@@ -33,22 +36,41 @@
       style="max-width: 300px"
     />
 
-    <!-- Componente Notificación -->
-    <Notificacion />
+    <!-- Iconos -->
+    <div class="menu-icon">
+      <Notificacion>
+        <template #activator="{ on, attrs }">
+          <v-icon v-bind="attrs" v-on="on" size="28">mdi-bell-outline</v-icon>
+        </template>
+      </Notificacion>
+    </div>
 
-    <!-- Componente Configuración -->
-    <Configuracion />
+    <div class="menu-icon">
+      <Configuracion>
+        <template #activator="{ on, attrs }">
+          <v-icon v-bind="attrs" v-on="on" size="28">mdi-cog-outline</v-icon>
+        </template>
+      </Configuracion>
+    </div>
 
-    <!-- Componente Perfil / Menú -->
-    <PerfilMenu />
+    <!-- Ícono de perfil forzado correctamente -->
+    <div class="menu-icon">
+      <PerfilMenu>
+        <template #activator="{ on, attrs }">
+          <v-btn v-bind="attrs" v-on="on" icon>
+            <v-icon size="30">mdi-account-circle-outline</v-icon>
+          </v-btn>
+        </template>
+      </PerfilMenu>
+    </div>
   </v-app-bar>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue'
 import Notificacion from '@/components/Notificacion.vue'
-import Configuracion from '@/components/Configuracion.vue'
 import PerfilMenu from '@/components/PerfilMenu.vue'
+import Logo from '@/assets/Logo.png'
 
 const search = ref('')
 </script>
@@ -59,13 +81,38 @@ const search = ref('')
   width: 100% !important;
   z-index: 10;
 }
-
-.search-field {
-  background-color: rgba(255, 255, 255, 0.15);
-  max-width: 300px;
+.logo-container {
+  display: flex;
+  align-items: center;
 }
-
-.search-field .v-input__control {
-  border-radius: 20px;
+.logo-text {
+  font-size: 26px;
+  font-weight: bold;
+  color: white;
+}
+.search-field {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  max-width: 300px;
+  transition: background-color 0.3s ease;
+}
+.search-field:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+.search-field input {
+  color: white !important;
+}
+.menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  margin-left: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+.menu-icon:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
 }
 </style>

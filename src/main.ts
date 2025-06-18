@@ -12,9 +12,6 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { VCalendar } from 'vuetify/labs/components'
 
-// 👉 importar i18n desde archivo separado
-import i18n from './i18n'
-
 const vuetify = createVuetify({
   components: { ...components, VCalendar },
   directives,
@@ -54,6 +51,5 @@ if (authStore.token) service.setToken(authStore.token);
 await authStore.me()
 
 app.use(router)
-app.use(i18n) // ✅ usar i18n global
 app.use(vuetify)
 app.mount('#app')
