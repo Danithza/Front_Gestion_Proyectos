@@ -14,10 +14,6 @@
         <v-list-item-title>Mi perfil</v-list-item-title>
       </v-list-item>
 
-      <v-list-item @click="goToCambiarClave">
-        <v-list-item-title>Cambiar contraseña</v-list-item-title>
-      </v-list-item>
-
       <v-divider></v-divider>
 
       <v-list-item @click="abrirConfirmacion" class="logout-item">

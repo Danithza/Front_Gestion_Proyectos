@@ -37,10 +37,10 @@ const allItems: NavItem[] = [
   { title: 'Reportes', icon: 'mdi-chart-box-outline', to: '/reportes' },
   { title: 'Usuarios', icon: 'mdi-account', to: '/usuarios', permission: 'user:read' },
   { title: 'Roles', icon: 'mdi-account-cog-outline', to: '/roles', permission: 'role:read' },
-  { title: 'Cities', icon: 'mdi-home-city', to: '/cities', permission: 'city:read' },
-  { title: 'Document Types', icon: 'mdi-badge-account', to: '/document-types', permission: 'typeDocument:read' },
-  { title: 'Statuses', icon: 'mdi-list-status', to: '/statuses',permission: 'status:read' },
-  { title: 'Priorities', icon: 'mdi-flag-variant', to: '/priorities', permission: 'priority:read' },
+  { title: 'Ciudades', icon: 'mdi-home-city', to: '/cities', permission: 'city:read' },
+  { title: 'Tipos de documentos', icon: 'mdi-badge-account', to: '/document-types', permission: 'typeDocument:read' },
+  { title: 'Estados', icon: 'mdi-list-status', to: '/statuses',permission: 'status:read' },
+  { title: 'Prioridades', icon: 'mdi-flag-variant', to: '/priorities', permission: 'priority:read' },
 ].filter((item: NavItem) => {
   if (!item.permission) return true
   return authStore.hasPermission(item.permission)

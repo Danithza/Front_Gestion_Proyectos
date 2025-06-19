@@ -22,27 +22,8 @@ navbar
 
     <v-spacer />
 
-    <!-- Buscador -->
-    <v-text-field
-      v-model="search"
-      variant="solo"
-      rounded
-      clearable
-      hide-details
-      prepend-inner-icon="mdi-magnify"
-      label="Buscar"
-      class="search-field"
-      density="compact"
-      style="max-width: 300px"
-    />
-
     <!-- Iconos -->
     <div class="menu-icon">
-      <Notificacion>
-        <template #activator="{ on, attrs }">
-          <v-icon v-bind="attrs" v-on="on" size="28">mdi-bell-outline</v-icon>
-        </template>
-      </Notificacion>
     </div>
 
     <div class="menu-icon">

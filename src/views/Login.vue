@@ -1,21 +1,37 @@
 <template>
   <v-app>
     <v-main class="login-background">
-      <v-container fluid class="fill-height">
+      <v-container fluid class="fill-height d-flex align-center justify-center">
         <v-row no-gutters class="fill-height">
           <!-- Columna izquierda - Bienvenida -->
-          <v-col cols="12" md="6" class="d-flex flex-column justify-start align-center px-10 text-center" style="padding-top: 8vh;">
-            <div class="glass-card pa-10 rounded-xl" style="background: rgba(255, 255, 255, 0.75); margin-top: 5vh;">
-
-              <h1 class="text-h2 font-weight-bold mb-6 primary--text" style="letter-spacing: -0.5px;">
+          <v-col
+            cols="12"
+            md="6"
+            class="d-flex flex-column justify-center align-center px-6 px-md-10 text-center"
+          >
+            <div
+              class="glass-card pa-6 pa-md-10 rounded-xl mx-4 my-6 my-md-0"
+              style="background: rgba(255, 255, 255, 0.75);"
+            >
+              <h1
+                class="text-h3 text-md-h2 font-weight-bold mb-4 mb-md-6 primary--text"
+                style="letter-spacing: -0.5px;"
+              >
                 ¡Linex!
               </h1>
-              <p class="text-body-1 mb-8 text--secondary" style="font-size: 1.1rem; line-height: 1.7;">
+              <p
+                class="text-body-1 mb-6 mb-md-8 text--secondary"
+                style="font-size: 1.05rem; line-height: 1.7;"
+              >
                 Organiza, planifica y colabora con tu equipo de manera eficiente.<br>
                 Linex es tu solución integral para la gestión de proyectos.
               </p>
               <transition name="fade" mode="out-in">
-                <p :key="fraseActual" class="text-h6 font-italic primary--text" style="font-weight: 500;">
+                <p
+                  :key="fraseActual"
+                  class="text-subtitle-1 text-md-h6 font-italic primary--text"
+                  style="font-weight: 500;"
+                >
                   "{{ fraseActual }}"
                 </p>
               </transition>
@@ -23,19 +39,19 @@
           </v-col>
 
           <!-- Columna derecha: Formulario -->
-          <v-col cols="12" md="6" class="d-flex justify-center align-center">
+          <v-col cols="12" md="6" class="d-flex justify-center align-center px-4">
             <v-card
-              class="pa-10"
+              class="pa-6 pa-md-10"
               elevation="12"
               max-width="448"
               rounded="xl"
-              style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px); margin-top: -15vh;"
+              style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px);"
             >
-              <div class="text-center mb-8">
-                <h2 class="text-h3 primary--text" style="font-weight: 600; letter-spacing: -0.5px;">
+              <div class="text-center mb-6 mb-md-8">
+                <h2 class="text-h4 text-md-h3 primary--text font-weight-medium">
                   Iniciar Sesión
                 </h2>
-                <p class="text-body-1 text--secondary mt-3" style="font-size: 1rem;">
+                <p class="text-body-2 text--secondary mt-2 mt-md-3">
                   Ingresa tus credenciales para continuar
                 </p>
               </div>
@@ -48,7 +64,7 @@
                 prepend-inner-icon="mdi-email-outline"
                 variant="outlined"
                 color="primary"
-                class="mb-6"
+                class="mb-5"
                 style="font-size: 0.95rem;"
                 hide-details="auto"
               />
@@ -69,7 +85,7 @@
                 hide-details="auto"
               />
 
-              <div class="d-flex justify-end mb-8">
+              <div class="d-flex justify-end mb-6">
                 <router-link
                   class="text-caption text-decoration-none primary--text"
                   to="/recuperarclave"
@@ -97,59 +113,27 @@
         </v-row>
       </v-container>
 
-      <!-- Diálogo modal para éxito -->
-      <v-dialog
-        v-model="successDialog"
-        persistent
-        max-width="500"
-        transition="dialog-bottom-transition"
-      >
+      <!-- Diálogos (sin cambios) -->
+      <v-dialog v-model="successDialog" persistent max-width="500" transition="dialog-bottom-transition">
         <v-card class="text-center pa-6" rounded="xl">
           <v-card-text class="py-6">
-            <v-icon
-              color="success"
-              size="80"
-              icon="mdi-check-circle-outline"
-            ></v-icon>
+            <v-icon color="success" size="80" icon="mdi-check-circle-outline"></v-icon>
             <h2 class="text-h4 mt-4 mb-2" style="font-weight: 400;">¡Bienvenido!</h2>
             <p class="text-body-1">Credenciales verificadas correctamente</p>
           </v-card-text>
-
-          <v-progress-linear
-            v-if="successDialog"
-            indeterminate
-            color="primary"
-            height="4"
-          ></v-progress-linear>
+          <v-progress-linear v-if="successDialog" indeterminate color="primary" height="4" />
         </v-card>
       </v-dialog>
 
-      <!-- Diálogo modal para errores -->
-      <v-dialog
-        v-model="errorDialog"
-        max-width="500"
-        transition="dialog-top-transition"
-      >
+      <v-dialog v-model="errorDialog" max-width="500" transition="dialog-top-transition">
         <v-card class="text-center pa-6" rounded="xl">
           <v-card-text class="py-6">
-            <v-icon
-              color="error"
-              size="80"
-              icon="mdi-alert-circle-outline"
-            ></v-icon>
+            <v-icon color="error" size="80" icon="mdi-alert-circle-outline" />
             <h2 class="text-h4 mt-4 mb-2" style="font-weight: 600;">Error de autenticación</h2>
             <p class="text-body-1">{{ errorMessage }}</p>
           </v-card-text>
-
           <v-card-actions class="justify-center pb-4">
-            <v-btn
-              color="primary"
-              variant="flat"
-              size="large"
-              rounded="lg"
-              @click="errorDialog = false"
-              style="min-width: 160px;"
-            >
+            <v-btn color="primary" variant="flat" size="large" rounded="lg" @click="errorDialog = false">
               Entendido
             </v-btn>
           </v-card-actions>

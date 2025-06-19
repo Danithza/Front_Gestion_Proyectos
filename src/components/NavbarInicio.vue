@@ -16,14 +16,6 @@
         <span class="text-h4 font-weight-bold text-white logo-text">Linex</span>
       </RouterLink>
 
-      <!-- Botón permanente con efecto de elevación -->
-      <RouterLink
-        to="/login"
-        class="text-decoration-none login-button"
-      >
-        <span class="button-text">Iniciar sesión</span>
-        <v-icon class="button-icon">mdi-login</v-icon>
-      </RouterLink>
     </v-container>
   </v-app-bar>
 </template>
