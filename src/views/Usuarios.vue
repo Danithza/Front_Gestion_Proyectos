@@ -55,15 +55,26 @@
         <span>{{ item.city?.title ?? '' }}</span>
       </template>
       <template v-slot:item.actions="{ item }">
-        <v-btn icon color="primary" @click="editUser(item)" class="text-body-1"
-                v-if="authStore.hasPermission('user:update')">
-          <v-icon>mdi-account-edit</v-icon>
-        </v-btn>
-        <v-btn icon color="#B71C1C" @click="askDeleteUser(item)"
-               class="text-body-1" v-if="authStore.hasPermission('user:delete')"
-                style="margin-left: 8px;">
-          <v-icon>mdi-delete-empty-outline</v-icon>
-        </v-btn>
+        <div class="d-flex align-center acciones-botones">
+          <v-btn
+            icon
+            size="small"
+            color="primary"
+            @click="editUser(item)"
+            class="mx-1"
+          >
+            <v-icon>mdi-pencil</v-icon>
+          </v-btn>
+          <v-btn
+            icon
+            size="small"
+            color="error"
+            @click="askDeleteUser(item)"
+            class="mx-1"
+          >
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+        </div>
       </template>
     </v-data-table>
 
@@ -126,6 +137,17 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Snackbar for notifications -->
+    <v-snackbar v-model="snackbar" :color="snackbarColor" :timeout="3000" top right>
+      <template #action="{ attrs }">
+        <v-btn text v-bind="attrs" @click="snackbar = false">
+          Close
+        </v-btn>
+      </template>
+      <v-icon v-if="snackbarIcon" left>{{ snackbarIcon }}</v-icon>
+      {{ snackbarMessage }}
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -219,6 +241,18 @@ const emptyUserForm: User = {
 
 const userForm = ref<User>({ ...emptyUserForm });
 const form = ref();
+
+const snackbar = ref(false);
+const snackbarMessage = ref('');
+const snackbarColor = ref('success');
+const snackbarIcon = ref('mdi-check-circle');
+
+function showSnackbar(message: string, color = 'success', icon = 'mdi-check-circle') {
+  snackbarMessage.value = message;
+  snackbarColor.value = color;
+  snackbarIcon.value = icon;
+  snackbar.value = true;
+}
 
 const fetchData = () => {
   fetchUsers();
@@ -336,6 +370,7 @@ const saveUser = async () => {
     }
     dialog.value = false;
     await fetchUsers(); // <-- refresca la lista después de guardar
+    showSnackbar(editingUser.value ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente');
   } catch (error) {
     console.error('Error saving user:', error);
   }
@@ -344,7 +379,8 @@ const saveUser = async () => {
 const deleteUser = async (id: number) => {
   try {
     await service.delete(CONFIG.api.users, id.toString());
-    await fetchUsers(); // <-- refresca la lista después de eliminar
+    await fetchUsers();
+    showSnackbar('Usuario eliminado exitosamente', 'success', 'mdi-check-circle');
   } catch (error) {
     console.error('Error deleting user:', error);
   }
