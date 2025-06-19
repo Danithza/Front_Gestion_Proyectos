@@ -2,30 +2,28 @@
   <v-container>
     <h2 class="text-h5 font-weight-bold mb-4">Reporte de Tareas por Usuario</h2>
 
-    <!-- Filtro por múltiples usuarios -->
     <v-row class="align-center mb-4" no-gutters>
-  <!-- Select de usuarios -->
-  <v-col cols="12" md="6">
-    <v-select
-      v-model="usuariosSeleccionados"
-      :items="usuarios"
-      item-title="firstName"
-      item-value="id"
-      label="Seleccionar Usuarios"
-      multiple
-      chips
-      clearable
-    />
-  </v-col>
+      <!-- Select de usuarios -->
+      <v-col cols="12" md="6">
+        <v-select
+          v-model="usuariosSeleccionados"
+          :items="usuarios"
+          item-title="firstName"
+          item-value="id"
+          label="Seleccionar Usuarios"
+          multiple
+          chips
+          clearable
+        />
+      </v-col>
 
-  <!-- Botones -->
-  <v-col cols="12" md="6" class="d-flex justify-end" style="gap: 16px;">
-    <v-btn color="red" @click="exportarPDF">PDF</v-btn>
-    <v-btn color="success" @click="exportarExcel">Excel</v-btn>
-  </v-col>
-</v-row>
+      <!-- Botones -->
+      <v-col cols="12" md="6" class="d-flex justify-end" style="gap: 16px;">
+        <v-btn color="red" @click="exportarPDF">PDF</v-btn>
+        <v-btn color="success" @click="exportarExcel">Excel</v-btn>
+      </v-col>
+    </v-row>
 
-    <!-- Tabla -->
     <v-data-table
       :headers="taskHeaders"
       :items="tareasFiltradas"
@@ -70,6 +68,13 @@ interface Tarea {
   responsable?: string
 }
 
+const token = localStorage.getItem('token') || '' // Asegúrate que el usuario haya iniciado sesión
+
+const headers = {
+  Authorization: `Bearer ${token}`,
+  'Content-Type': 'application/json',
+}
+
 const usuarios = ref<Usuario[]>([])
 const estados = ref<Estado[]>([])
 const proyectos = ref<Proyecto[]>([])
@@ -92,36 +97,45 @@ const taskHeaders = [
 ]
 
 const obtenerUsuarios = async () => {
-  const res = await fetch('http://localhost:3333/api/users')
+  const res = await fetch('http://localhost:3333/api/users', { headers })
   usuarios.value = await res.json()
 }
 
 const obtenerEstados = async () => {
-  const res = await fetch('http://localhost:3333/api/statuses')
+  const res = await fetch('http://localhost:3333/api/statuses', { headers })
   estados.value = await res.json()
 }
 
 const obtenerProyectos = async () => {
-  const res = await fetch('http://localhost:3333/api/projects')
+  const res = await fetch('http://localhost:3333/api/projects', { headers })
   proyectos.value = await res.json()
 }
 
 const obtenerTareas = async () => {
-  const res = await fetch('http://localhost:3333/api/tasks')
-  const data = await res.json()
+  try {
+    const res = await fetch('http://localhost:3333/api/tasks', { headers })
 
-  tareas.value = data.map((t: Tarea) => {
-    const user = usuarios.value.find(u => u.id === t.userId)
-    const estado = estados.value.find(e => e.id === t.statusId)
-    const proyecto = proyectos.value.find(p => p.id === t.projectId)
+    if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`)
 
-    return {
-      ...t,
-      responsable: user ? `${user.firstName} ${user.lastName}` : 'Desconocido',
-      status: estado ? estado.title : 'Sin estado',
-      proyecto: proyecto ? proyecto.title : 'Sin proyecto',
-    }
-  })
+    const data = await res.json()
+
+    if (!Array.isArray(data)) throw new Error('Respuesta inesperada: no es un array')
+
+    tareas.value = data.map((t: Tarea) => {
+      const user = usuarios.value.find(u => u.id === t.userId)
+      const estado = estados.value.find(e => e.id === t.statusId)
+      const proyecto = proyectos.value.find(p => p.id === t.projectId)
+
+      return {
+        ...t,
+        responsable: user ? `${user.firstName} ${user.lastName}` : 'Desconocido',
+        status: estado ? estado.title : 'Sin estado',
+        proyecto: proyecto ? proyecto.title : 'Sin proyecto',
+      }
+    })
+  } catch (err) {
+    console.error('Error al obtener tareas:', err)
+  }
 }
 
 const exportarPDF = () => {
