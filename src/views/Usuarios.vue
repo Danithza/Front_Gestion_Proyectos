@@ -62,6 +62,7 @@
             color="primary"
             @click="editUser(item)"
             class="mx-1"
+            v-if="authStore.hasPermission('user:update')"
           >
             <v-icon>mdi-pencil</v-icon>
           </v-btn>
@@ -71,6 +72,7 @@
             color="error"
             @click="askDeleteUser(item)"
             class="mx-1"
+            v-if="authStore.hasPermission('user:delete')"
           >
             <v-icon>mdi-delete</v-icon>
           </v-btn>
