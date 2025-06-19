@@ -38,6 +38,7 @@ import { ref, computed, onMounted } from 'vue'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
+import CONFIG from '@/config/app';
 
 interface Usuario {
   id: number
@@ -97,23 +98,23 @@ const taskHeaders = [
 ]
 
 const obtenerUsuarios = async () => {
-  const res = await fetch('http://localhost:3333/api/users', { headers })
+  const res = await fetch(CONFIG.baseUrl+'/api/users', { headers })
   usuarios.value = await res.json()
 }
 
 const obtenerEstados = async () => {
-  const res = await fetch('http://localhost:3333/api/statuses', { headers })
+  const res = await fetch(CONFIG.baseUrl+'/api/statuses', { headers })
   estados.value = await res.json()
 }
 
 const obtenerProyectos = async () => {
-  const res = await fetch('http://localhost:3333/api/projects', { headers })
+  const res = await fetch(CONFIG.baseUrl+'/api/projects', { headers })
   proyectos.value = await res.json()
 }
 
 const obtenerTareas = async () => {
   try {
-    const res = await fetch('http://localhost:3333/api/tasks', { headers })
+    const res = await fetch(CONFIG.baseUrl+'/api/tasks', { headers })
 
     if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`)
 

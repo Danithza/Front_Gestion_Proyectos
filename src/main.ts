@@ -45,11 +45,14 @@ const vuetify = createVuetify({
 const app = createApp(App)
 app.use(createPinia())
 
-// Restore the token in the baseService
-const authStore = useAuthStore();
-if (authStore.token) service.setToken(authStore.token);
-await authStore.me()
+async function bootstrap() {
+  const authStore = useAuthStore();
+  if (authStore.token) service.setToken(authStore.token);
+  await authStore.me();
 
-app.use(router)
-app.use(vuetify)
-app.mount('#app')
+  app.use(router)
+  app.use(vuetify)
+  app.mount('#app')
+}
+
+bootstrap()
